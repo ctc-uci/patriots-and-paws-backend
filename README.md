@@ -1,5 +1,6 @@
 # Patriots and Paws Backend
-This template will be used to create all NPO backend repos
+
+This is the backend for the Patriots and Paws project.
 
 ## Setting up development environment
 
