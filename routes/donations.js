@@ -46,7 +46,6 @@ router.post('/', async (req, res) => {
     } = req.body;
     const donation = await db.query(
       `INSERT INTO donations (
-        id,
         ${routeId ? 'route_id, ' : ''}
         ${orderNum ? 'order_num, ' : ''}
         status, address_street,
@@ -54,9 +53,10 @@ router.post('/', async (req, res) => {
         address_city, address_zip, first_name,
         last_name, email, phone_num,
         ${notes ? 'notes, ' : ''}
-        ${date ? 'date ' : ''}
+        ${date ? 'date, ' : ''}
+        id
         )
-      VALUES ($(id),
+      VALUES (
         ${routeId ? '$(routeId), ' : ''}
         ${orderNum ? '$(orderNum), ' : ''}
         $(status), $(addressStreet),
@@ -64,7 +64,8 @@ router.post('/', async (req, res) => {
         $(addressCity), $(addressZip), $(firstName),
         $(lastName), $(email), $(phoneNum),
         ${notes ? '$(notes), ' : ''}
-        ${date ? '$(date) ' : ''}
+        ${date ? '$(date), ' : ''}
+        $(id)
       )
       RETURNING *;`,
       {
@@ -114,17 +115,18 @@ router.put('/:donationId', async (req, res) => {
       SET
         ${routeId ? 'route_id = $(routeId), ' : ''}
         ${orderNum ? 'order_num = $(orderNum), ' : ''}
-        status = $(status),
-        address_street = $(addressStreet),
+        ${status ? 'status = $(status), ' : ''}
+        ${addressStreet ? 'address_street = $(addressStreet), ' : ''}
         ${addressUnit ? 'address_unit = $(addressUnit), ' : ''}
-        address_city = $(addressCity),
-        address_zip = $(addressZip),
-        first_name = $(firstName),
-        last_name = $(lastName),
-        email = $(email),
-        phone_num = $(phoneNum),
+        ${addressCity ? 'address_city = $(addressCity), ' : ''}
+        ${addressZip ? 'address_zip = $(addressZip), ' : ''}
+        ${firstName ? 'first_name = $(firstName), ' : ''}
+        ${lastName ? 'last_name = $(lastName), ' : ''}
+        ${email ? 'email = $(email), ' : ''}
+        ${phoneNum ? 'phone_num = $(phoneNum), ' : ''}
         ${notes ? 'notes = $(notes), ' : ''}
-        ${date ? 'date = $(date) ' : ''}
+        ${date ? 'date = $(date), ' : ''}
+        id = $(donationId)
       WHERE id = $(donationId)
       RETURNING *;`,
       {
