@@ -1,5 +1,5 @@
 const express = require('express');
-
+const { keysToCamel } = require('../common/utils');
 const { pool, db } = require('../server/db');
 
 const router = express.Router();
@@ -7,8 +7,8 @@ const router = express.Router();
 // get all donation rows
 router.get('/', async (req, res) => {
   try {
-    const allDonations = await pool.query(`SELECT * FROM Donations`);
-    res.status(200).json(allDonations.rows);
+    const allDonations = await pool.query(`SELECT * FROM donations`);
+    res.status(200).json(keysToCamel(allDonations.rows));
   } catch (err) {
     res.status(400).send(err.message);
   }
@@ -18,8 +18,8 @@ router.get('/', async (req, res) => {
 router.get('/:donationId', async (req, res) => {
   try {
     const { donationId } = req.params;
-    const donation = await pool.query(`SELECT * FROM Donations WHERE id = ${donationId}`);
-    res.status(200).json(donation.rows);
+    const donation = await pool.query(`SELECT * from donations WHERE id = $1`, [donationId]);
+    res.status(200).json(keysToCamel(donation.rows));
   } catch (err) {
     res.status(400).send(err.message);
   }
@@ -85,7 +85,7 @@ router.post('/', async (req, res) => {
         date,
       },
     );
-    res.status(200).send(donation[0]);
+    res.status(200).send(keysToCamel(donation[0]));
   } catch (err) {
     res.status(400).send(err.message);
   }
@@ -111,7 +111,7 @@ router.put('/:donationId', async (req, res) => {
       date,
     } = req.body;
     const donation = await db.query(
-      `UPDATE Donations
+      `UPDATE donations
       SET
         ${routeId ? 'route_id = $(routeId), ' : ''}
         ${orderNum ? 'order_num = $(orderNum), ' : ''}
@@ -146,7 +146,7 @@ router.put('/:donationId', async (req, res) => {
         date,
       },
     );
-    res.status(200).send(donation[0]);
+    res.status(200).send(keysToCamel(donation[0]));
   } catch (err) {
     res.status(400).send(err.message);
   }
@@ -156,10 +156,10 @@ router.put('/:donationId', async (req, res) => {
 router.delete('/:donationId', async (req, res) => {
   try {
     const { donationId } = req.params;
-    const deletedDonation = await pool.query(
-      `DELETE FROM Donations WHERE id = ${donationId} RETURNING *`,
-    );
-    res.status(200).send(deletedDonation.rows[0]);
+    const deletedDonation = await pool.query(`DELETE from donations WHERE id = $1 RETURNING *`, [
+      donationId,
+    ]);
+    res.status(200).send(keysToCamel(deletedDonation.rows[0]));
   } catch (err) {
     res.status(400).send(err.message);
   }

@@ -1,8 +1,8 @@
 CREATE TYPE status AS ENUM ('pending', 'approved', 'denied', 'flagged', 'scheduling', 'scheduled', 'picked up', 'failed');
 
 
-CREATE TABLE [IF NOT EXISTS] Donations (
-   id INT PRIMARY KEY,
+CREATE TABLE [IF NOT EXISTS] donations (
+   id SERIAL PRIMARY KEY,
    route_id INT,
    order_num INT,
    status status NOT NULL,
