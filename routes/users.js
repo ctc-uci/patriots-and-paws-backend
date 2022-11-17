@@ -10,7 +10,7 @@ router.use(express.json());
 
 router.post('/', async (req, res) => {
   try {
-    const {id, role, firstName, lastName, phoneNumber, email} = req.body;
+    const { id, role, firstName, lastName, phoneNumber, email } = req.body;
     const newUser = await db.query(
       `INSERT INTO users VALUES('${id}', '${role}', '${firstName}' , '${lastName}', '${phoneNumber}', '${email}') RETURNING *;`,
     );
@@ -32,7 +32,7 @@ router.get('/', async (req, res) => {
 router.get('/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
-    const userInfo = await db.query(`SELECT * FROM users WHERE id = $1`, [userId]);
+    const userInfo = await db.query(`SELECT * FROM users WHERE id = ${userId}`);
     res.status(200).json(keysToCamel(userInfo[0]));
   } catch (err) {
     res.status(500).send(err.message);
@@ -42,8 +42,8 @@ router.get('/:userId', async (req, res) => {
 router.put('/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
-    const data = req.body;
-    const updatedUser  = await db.query(`UPDATE users SET 
+    const { body: data } = req;
+    const updatedUser = await db.query(`UPDATE users SET 
     ${data.id ? `id = '${data.id}', ` : ''}
     ${data.role ? `role = '${data.role}', ` : ''}
     ${data.firstName ? `first_name = '${data.firstName}', ` : ''}
@@ -51,7 +51,7 @@ router.put('/:userId', async (req, res) => {
     ${data.phoneNumber ? `phone_number = '${data.phoneNumber}', ` : ''}
     ${data.email ? `email = '${data.email}' ` : ''}
      WHERE id = '${userId}' RETURNING *;`);
-    res.status(200).json(keysToCamel(updatedUser [0]));
+    res.status(200).json(keysToCamel(updatedUser[0]));
   } catch (err) {
     res.status(500).send(err.message);
   }
@@ -60,7 +60,7 @@ router.put('/:userId', async (req, res) => {
 router.delete('/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
-    const deletedUser = await db.query(`DELETE FROM users WHERE id = $1 RETURNING *;`, [userId]);
+    const deletedUser = await db.query(`DELETE FROM users WHERE id = ${userId} RETURNING *;`);
     res.status(200).json(deletedUser ? keysToCamel(deletedUser[0]) : []);
   } catch (err) {
     res.status(500).send(err.message);
