@@ -1,13 +1,11 @@
 const express = require('express');
-const { pool, db } = require('../server/db');
+const { db } = require('../server/db');
+
 const router = express.Router();
-
-// await pool.query('query')
-
 
 router.get('/', async (req, res) => {
   try {
-    const pictures = await pool.query('SELECT * FROM pictures');
+    const pictures = await db.query('SELECT * FROM pictures');
     res.status(200).json(pictures.rows);
   } catch (err) {
     res.status(400).send(err.message);
@@ -16,24 +14,20 @@ router.get('/', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const {
-      id,
-      furniture_id,
-      image_url,
-    } = req.body;
-    const pictures = await pool.query(
+    const { id, furnitureId, imageURL } = req.body;
+    const pictures = await db.query(
       `INSERT INTO pictures (
-        id, furniture_id, image_url,
+        id, furnitureId, imageURL,
         )
       VALUES (
-        $(id), $(furniture_id), $(image_url)
+        $(id), $(furnitureId), $(imageURL)
         )
       RETURNING *;`,
       {
         id,
-        furniture_id,
-        image_url,
-      }
+        furnitureId,
+        imageURL,
+      },
     );
     res.status(200).json(pictures.rows);
   } catch (err) {
@@ -42,29 +36,25 @@ router.post('/', async (req, res) => {
 });
 
 router.put('/:picturesId', async (req, res) => {
-  const { picturesId } = req.params;
+  const { picturesID } = req.params;
   try {
-    const {
-      id,
-      furniture_id,
-      image_url,
-    } = req.body;
-    const updatedPictures = await pool.query(
+    const { id, furnitureId, imageURL } = req.body;
+    const updatedPictures = await db.query(
       `UPDATE pictures (
-        id, furniture_id, image_url,
+        id, furnitureId, imageURL,
         )
       SET
         id = $(id),
-        furniture_id = $(furniture_id),
-        image_url = $(image_url)
+        furnitureId = $(furnitureId),
+        imageURL = $(imageURL)
       WHERE id = $(picturesID)
       RETURNING *;`,
       {
         id,
-        furniture_id,
-        image_url,
-        picturesId,
-      }
+        furnitureId,
+        imageURL,
+        picturesID,
+      },
     );
     res.status(200).json(updatedPictures.rows);
   } catch (err) {
@@ -75,18 +65,18 @@ router.put('/:picturesId', async (req, res) => {
 router.delete('/:picturesId', async (req, res) => {
   try {
     const { picturesID } = req.params;
-    const deletedPictures = await pool.query(
-        `DELETE FROM pictures
+    const deletedPictures = await db.query(
+      `DELETE FROM pictures
         WHERE id = $(picturesID)
         RETURNING *`,
-        {
-            picturesID,
-        },
+      {
+        picturesID,
+      },
     );
     res.status(200).json(deletedPictures.rows);
-} catch (err) {
+  } catch (err) {
     res.status(400).send(err.message);
-}
+  }
 });
 
 module.exports = router;
