@@ -16,8 +16,8 @@ app.use(
   }),
 );
 
-app.use('/user', users);
-app.use('/route', routes);
+app.use('/users', users);
+app.use('/routes', routes);
 
 app.listen(PORT, () => {
   console.log(`Server listening on ${PORT}`);
