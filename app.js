@@ -3,6 +3,8 @@ const cors = require('cors');
 
 require('dotenv').config();
 
+const s3UploadRouter = require('./routes/s3upload');
+
 const app = express();
 
 const PORT = process.env.PORT || 3001;
@@ -12,6 +14,8 @@ app.use(
     origin: `${process.env.REACT_APP_HOST}:${process.env.REACT_APP_PORT}`,
   }),
 );
+
+app.use('/s3Upload', s3UploadRouter);
 
 app.listen(PORT, () => {
   console.log(`Server listening on ${PORT}`);
