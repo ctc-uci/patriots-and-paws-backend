@@ -1,16 +1,16 @@
 const express = require('express');
 const { keysToCamel } = require('../common/utils');
-const { pool, db } = require('../server/db');
+const { db } = require('../server/db');
 
 const router = express.Router();
 
 // get all donation rows
 router.get('/', async (req, res) => {
   try {
-    const allDonations = await pool.query(`SELECT * FROM donations`);
-    res.status(200).json(keysToCamel(allDonations.rows));
+    const allDonations = await db.query(`SELECT * FROM donations;`);
+    res.status(200).json(allDonations.row ? keysToCamel(allDonations.rows) : []);
   } catch (err) {
-    res.status(400).send(err.message);
+    res.status(500).send(err.message);
   }
 });
 
@@ -18,10 +18,12 @@ router.get('/', async (req, res) => {
 router.get('/:donationId', async (req, res) => {
   try {
     const { donationId } = req.params;
-    const donation = await pool.query(`SELECT * from donations WHERE id = $1`, [donationId]);
-    res.status(200).json(keysToCamel(donation.rows));
+    const donation = await db.query(`SELECT * from donations WHERE id = $(donationId);`, {
+      donationId,
+    });
+    res.status(200).json(keysToCamel(donation.rows ? keysToCamel(donation.rows) : []));
   } catch (err) {
-    res.status(400).send(err.message);
+    res.status(500).send(err.message);
   }
 });
 
@@ -29,7 +31,6 @@ router.get('/:donationId', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const {
-      id,
       routeId,
       orderNum,
       status,
@@ -48,28 +49,27 @@ router.post('/', async (req, res) => {
       `INSERT INTO donations (
         ${routeId ? 'route_id, ' : ''}
         ${orderNum ? 'order_num, ' : ''}
-        status, address_street,
+        address_street,
         ${addressUnit ? 'address_unit, ' : ''}
         address_city, address_zip, first_name,
         last_name, email, phone_num,
         ${notes ? 'notes, ' : ''}
         ${date ? 'date, ' : ''}
-        id
+        status
         )
       VALUES (
         ${routeId ? '$(routeId), ' : ''}
         ${orderNum ? '$(orderNum), ' : ''}
-        $(status), $(addressStreet),
+        $(addressStreet),
         ${addressUnit ? '$(addressUnit), ' : ''}
         $(addressCity), $(addressZip), $(firstName),
         $(lastName), $(email), $(phoneNum),
         ${notes ? '$(notes), ' : ''}
         ${date ? '$(date), ' : ''}
-        $(id)
+        $(status)
       )
       RETURNING *;`,
       {
-        id,
         routeId,
         orderNum,
         status,
@@ -87,7 +87,7 @@ router.post('/', async (req, res) => {
     );
     res.status(200).send(keysToCamel(donation[0]));
   } catch (err) {
-    res.status(400).send(err.message);
+    res.status(500).send(err.message);
   }
 });
 
@@ -146,9 +146,9 @@ router.put('/:donationId', async (req, res) => {
         date,
       },
     );
-    res.status(200).send(keysToCamel(donation[0]));
+    res.status(200).send(keysToCamel(donation[0] ? donation[0] : []));
   } catch (err) {
-    res.status(400).send(err.message);
+    res.status(500).send(err.message);
   }
 });
 
@@ -156,12 +156,13 @@ router.put('/:donationId', async (req, res) => {
 router.delete('/:donationId', async (req, res) => {
   try {
     const { donationId } = req.params;
-    const deletedDonation = await pool.query(`DELETE from donations WHERE id = $1 RETURNING *`, [
-      donationId,
-    ]);
-    res.status(200).send(keysToCamel(deletedDonation.rows[0]));
+    const deletedDonation = await db.query(
+      `DELETE from donations WHERE id = $(donationId) RETURNING *;`,
+      { donationId },
+    );
+    res.status(200).send(keysToCamel(deletedDonation.rows[0] ? deletedDonation.rows[0] : []));
   } catch (err) {
-    res.status(400).send(err.message);
+    res.status(500).send(err.message);
   }
 });
 
