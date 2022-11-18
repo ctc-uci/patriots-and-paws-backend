@@ -41,20 +41,20 @@ const messageAssignee = async ({ context }) => {
     try {
       const UserModel = getUserModel();
       const slackAssignees = await Promise.allSettled(
-        githubAssignees.map(assignee => UserModel.findOne({ github: assignee.login })),
+        githubAssignees.map((assignee) => UserModel.findOne({ github: assignee.login })),
       );
       if (context.payload.review.state === 'approved') {
         await Promise.all(
-          slackAssignees.map(assignee =>
+          slackAssignees.map((assignee) =>
             Bot.client.chat.postMessage({
               channel: assignee.value?.slackId,
-              text: `${reviewer} has :discodog:APPROVED your PR <${url}|${title}>`
+              text: `${reviewer} has :discodog:APPROVED your PR <${url}|${title}>`,
             }),
           ),
         );
       } else if (context.payload.review.state === 'changes_requested') {
         await Promise.all(
-          slackAssignees.map(assignee =>
+          slackAssignees.map((assignee) =>
             Bot.client.chat.postMessage({
               channel: assignee.value?.slackId,
               text: `${reviewer} has :ahhhhhhhhh:REQUESTED CHANGES for PR <${url}|${title}>`,
@@ -63,7 +63,7 @@ const messageAssignee = async ({ context }) => {
         );
       } else {
         await Promise.all(
-          slackAssignees.map(assignee =>
+          slackAssignees.map((assignee) =>
             Bot.client.chat.postMessage({
               channel: assignee.value?.slackId,
               text: `${reviewer} has :this-is-fine:REVIEWED your PR <${url}|${title}>`,
