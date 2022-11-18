@@ -14,7 +14,7 @@ router.post('/', async (req, res) => {
     const newUser = await db.query(
       `INSERT INTO users VALUES('${id}', '${role}', '${firstName}' , '${lastName}', '${phoneNumber}', '${email}') RETURNING *;`,
     );
-    res.status(200).json(keysToCamel(newUser[0]));
+    res.status(200).json(keysToCamel(newUser[0]) ?? []);
   } catch (err) {
     res.status(500).send(err.message);
   }
@@ -33,7 +33,7 @@ router.get('/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
     const userInfo = await db.query(`SELECT * FROM users WHERE id = ${userId}`);
-    res.status(200).json(keysToCamel(userInfo[0]));
+    res.status(200).json(keysToCamel(userInfo[0]) ?? []);
   } catch (err) {
     res.status(500).send(err.message);
   }
@@ -51,7 +51,7 @@ router.put('/:userId', async (req, res) => {
     ${data.phoneNumber ? `phone_number = '${data.phoneNumber}', ` : ''}
     ${data.email ? `email = '${data.email}' ` : ''}
      WHERE id = '${userId}' RETURNING *;`);
-    res.status(200).json(keysToCamel(updatedUser[0]));
+    res.status(200).json(keysToCamel(updatedUser[0]) ?? []);
   } catch (err) {
     res.status(500).send(err.message);
   }
@@ -60,8 +60,9 @@ router.put('/:userId', async (req, res) => {
 router.delete('/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
-    const deletedUser = await db.query(`DELETE FROM users WHERE id = ${userId} RETURNING *;`);
-    res.status(200).json(deletedUser ? keysToCamel(deletedUser[0]) : []);
+    const deletedUser =
+      (await db.query(`DELETE FROM users WHERE id = ${userId} RETURNING *;`)) ?? [];
+    res.status(200).json(keysToCamel([deletedUser[0]]) ?? []);
   } catch (err) {
     res.status(500).send(err.message);
   }

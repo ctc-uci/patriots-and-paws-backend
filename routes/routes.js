@@ -13,7 +13,7 @@ router.post('/', async (req, res) => {
       `INSERT INTO routes (${data.driverId ? 'driver_id, ' : ''} id) 
       VALUES(${data.driverId ? `${data.driverId}, ` : ''} ${data.id}) RETURNING *;`,
     );
-    res.status(200).json(keysToCamel(newRoute[0]));
+    res.status(200).json(keysToCamel(newRoute[0]) ?? []);
   } catch (err) {
     res.status(500).send(err.message);
   }
@@ -32,7 +32,7 @@ router.get('/:routeId', async (req, res) => {
   try {
     const { routeId } = req.params;
     const routeInfo = await db.query(`SELECT * FROM routes WHERE id = $(routeId);`, { routeId });
-    res.status(200).json(keysToCamel(routeInfo[0]));
+    res.status(200).json(keysToCamel(routeInfo[0]) ?? []);
   } catch (err) {
     res.status(500).send(err.message);
   }
@@ -45,7 +45,7 @@ router.put('/:routeId', async (req, res) => {
     const updatedRoute = await db.query(`UPDATE routes SET 
     ${driverId ? `driver_id = '${driverId}' ` : ''}
      WHERE id = ${routeId} RETURNING *;`);
-    res.status(200).json(keysToCamel(updatedRoute[0]));
+    res.status(200).json(keysToCamel(updatedRoute[0]) ?? []);
   } catch (err) {
     res.status(500).send(err.message);
   }
@@ -57,7 +57,8 @@ router.delete('/:routeId', async (req, res) => {
     const deletedRoute = await db.query(`DELETE FROM routes WHERE id = $(routeId) RETURNING *;`, {
       routeId,
     });
-    res.status(200).json(deletedRoute ? keysToCamel(deletedRoute[0]) : []);
+
+    res.status(200).json(keysToCamel(deletedRoute[0]) ?? []);
   } catch (err) {
     res.status(500).send(err.message);
   }
