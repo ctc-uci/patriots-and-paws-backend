@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 
+const nodemailer = require('./routes/nodeMailer');
+
 require('dotenv').config();
 
 const app = express();
@@ -12,6 +14,8 @@ app.use(
     origin: `${process.env.REACT_APP_HOST}:${process.env.REACT_APP_PORT}`,
   }),
 );
+
+app.use('/nodemailer', nodemailer);
 
 app.listen(PORT, () => {
   console.log(`Server listening on ${PORT}`);
