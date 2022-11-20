@@ -3,7 +3,6 @@ const cors = require('cors');
 
 const users = require('./routes/users');
 const routes = require('./routes/routes');
-const nodemailer = require('./routes/nodeMailer');
 
 require('dotenv').config();
 
@@ -17,9 +16,8 @@ app.use(
   }),
 );
 
-app.use('/user', users);
-app.use('/route', routes);
-app.use('/nodemailer', nodemailer);
+app.use('/users', users);
+app.use('/routes', routes);
 
 app.listen(PORT, () => {
   console.log(`Server listening on ${PORT}`);
