@@ -1,3 +1,5 @@
+import { keysToCamel } from '../common/utils';
+
 const express = require('express');
 const { db } = require('../server/db');
 
@@ -6,9 +8,9 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   try {
     const pictures = await db.query('SELECT * FROM pictures');
-    res.status(200).json(pictures.rows);
+    res.status(200).json(keysToCamel(pictures));
   } catch (err) {
-    res.status(400).send(err.message);
+    res.status(500).send(err.message);
   }
 });
 
@@ -29,9 +31,9 @@ router.post('/', async (req, res) => {
         imageURL,
       },
     );
-    res.status(200).json(pictures.rows);
+    res.status(200).json(keysToCamel(pictures));
   } catch (err) {
-    res.status(400).send(err.message);
+    res.status(500).send(err.message);
   }
 });
 
@@ -56,9 +58,9 @@ router.put('/:picturesId', async (req, res) => {
         picturesID,
       },
     );
-    res.status(200).json(updatedPictures.rows);
+    res.status(200).json(updatedPictures);
   } catch (err) {
-    res.status(400).send(err.message);
+    res.status(500).send(err.message);
   }
 });
 
@@ -73,9 +75,9 @@ router.delete('/:picturesId', async (req, res) => {
         picturesID,
       },
     );
-    res.status(200).json(deletedPictures.rows);
+    res.status(200).json(keysToCamel(deletedPictures));
   } catch (err) {
-    res.status(400).send(err.message);
+    res.status(500).send(err.message);
   }
 });
 

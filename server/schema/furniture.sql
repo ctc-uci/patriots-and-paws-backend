@@ -1,4 +1,5 @@
-CREATE TABLE [IF NOT EXISTS] furniture (
+DROP TABLE IF EXISTS furniture;
+CREATE TABLE furniture (
    id SERIAL PRIMARY KEY,
    donation_id INT NOT NULL,
    name VARCHAR(256) NOT NULL,
