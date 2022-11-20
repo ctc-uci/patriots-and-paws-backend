@@ -5,6 +5,8 @@ const donations = require('./routes/donations');
 
 require('dotenv').config();
 
+const s3UploadRouter = require('./routes/s3upload');
+
 const app = express();
 
 const PORT = process.env.PORT || 3001;
@@ -17,6 +19,7 @@ app.use(
 
 app.use(express.json()); // for req.body
 app.use('/donations', donations);
+app.use('/s3Upload', s3UploadRouter);
 
 app.listen(PORT, () => {
   console.log(`Server listening on ${PORT}`);
