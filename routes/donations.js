@@ -8,7 +8,7 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   try {
     const allDonations = await db.query(`SELECT * FROM donations;`);
-    res.status(200).json(allDonations);
+    res.status(200).json(keysToCamel(allDonations));
   } catch (err) {
     res.status(500).send(err.message);
   }
@@ -85,7 +85,7 @@ router.post('/', async (req, res) => {
         date,
       },
     );
-    res.status(200).send(keysToCamel(donation[0]));
+    res.status(200).send(keysToCamel(donation));
   } catch (err) {
     res.status(500).send(err.message);
   }
@@ -146,11 +146,7 @@ router.put('/:donationId', async (req, res) => {
         date,
       },
     );
-    if (!donation[0]) {
-      res.status(404).send(`donation with id=${donationId} not found`);
-    } else {
-      res.status(200).send(keysToCamel(donation[0]));
-    }
+    res.status(200).send(keysToCamel(donation));
   } catch (err) {
     res.status(500).send(err.message);
   }
@@ -164,11 +160,7 @@ router.delete('/:donationId', async (req, res) => {
       `DELETE from donations WHERE id = $(donationId) RETURNING *;`,
       { donationId },
     );
-    if (!deletedDonation[0]) {
-      res.status(404).send(`donation with id=${donationId} not found`);
-    } else {
-      res.status(200).send(keysToCamel(deletedDonation[0]));
-    }
+    res.status(200).send(keysToCamel(deletedDonation));
   } catch (err) {
     res.status(500).send(err.message);
   }
