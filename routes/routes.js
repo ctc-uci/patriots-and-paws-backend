@@ -1,17 +1,18 @@
 const express = require('express');
 const { keysToCamel } = require('../common/utils');
 
-const router = express.Router();
+const routesRouter = express.Router();
 const { db } = require('../server/db');
 
-router.use(express.json());
+routesRouter.use(express.json());
 
-router.post('/', async (req, res) => {
+routesRouter.post('/', async (req, res) => {
   try {
-    const data = req.body;
+    const { id, driverId } = req.body;
     const newRoute = await db.query(
-      `INSERT INTO routes (${data.driverId ? 'driver_id, ' : ''} id) 
-      VALUES(${data.driverId ? `${data.driverId}, ` : ''} ${data.id}) RETURNING *;`,
+      `INSERT INTO routes (${driverId ? 'driver_id, ' : ''} id) 
+      VALUES(${driverId ? '$(driverId), ' : ''} $(id)) RETURNING *;`,
+      { driverId, id },
     );
     res.status(200).json(keysToCamel(newRoute[0]) ?? []);
   } catch (err) {
@@ -19,7 +20,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.get('/', async (req, res) => {
+routesRouter.get('/', async (req, res) => {
   try {
     const allRoutes = await db.query(`SELECT * FROM routes;`);
     res.status(200).json(keysToCamel(allRoutes));
@@ -28,7 +29,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.get('/:routeId', async (req, res) => {
+routesRouter.get('/:routeId', async (req, res) => {
   try {
     const { routeId } = req.params;
     const routeInfo = await db.query(`SELECT * FROM routes WHERE id = $(routeId);`, { routeId });
@@ -38,20 +39,23 @@ router.get('/:routeId', async (req, res) => {
   }
 });
 
-router.put('/:routeId', async (req, res) => {
+routesRouter.put('/:routeId', async (req, res) => {
   try {
     const { routeId } = req.params;
     const { driverId } = req.body;
-    const updatedRoute = await db.query(`UPDATE routes SET 
-    ${driverId ? `driver_id = '${driverId}' ` : ''}
-     WHERE id = ${routeId} RETURNING *;`);
+    const updatedRoute = await db.query(
+      `UPDATE routes SET 
+    ${driverId ? 'driver_id = $(driverId) ' : ''}
+     WHERE id = $(routeId) RETURNING *;`,
+      { driverId, routeId },
+    );
     res.status(200).json(keysToCamel(updatedRoute[0]) ?? []);
   } catch (err) {
     res.status(500).send(err.message);
   }
 });
 
-router.delete('/:routeId', async (req, res) => {
+routesRouter.delete('/:routeId', async (req, res) => {
   try {
     const { routeId } = req.params;
     const deletedRoute = await db.query(`DELETE FROM routes WHERE id = $(routeId) RETURNING *;`, {
@@ -64,4 +68,4 @@ router.delete('/:routeId', async (req, res) => {
   }
 });
 
-module.exports = router;
+module.exports = routesRouter;

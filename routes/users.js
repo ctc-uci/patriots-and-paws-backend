@@ -1,18 +1,19 @@
 const express = require('express');
 
-const router = express.Router();
+const usersRouter = express.Router();
 
 const { db } = require('../server/db');
 
 const { keysToCamel } = require('../common/utils');
 
-router.use(express.json());
+usersRouter.use(express.json());
 
-router.post('/', async (req, res) => {
+usersRouter.post('/', async (req, res) => {
   try {
     const { id, role, firstName, lastName, phoneNumber, email } = req.body;
     const newUser = await db.query(
-      `INSERT INTO users VALUES('${id}', '${role}', '${firstName}' , '${lastName}', '${phoneNumber}', '${email}') RETURNING *;`,
+      `INSERT INTO users VALUES($(id), $(role), $(firstName) , $(lastName), $(phoneNumber), $(email)) RETURNING *;`,
+      { id, role, firstName, lastName, phoneNumber, email },
     );
     res.status(200).json(keysToCamel(newUser[0]) ?? []);
   } catch (err) {
@@ -20,7 +21,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.get('/', async (req, res) => {
+usersRouter.get('/', async (req, res) => {
   try {
     const allUsers = await db.query(`SELECT * FROM users;`);
     res.status(200).json(keysToCamel(allUsers));
@@ -29,43 +30,46 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.get('/:userId', async (req, res) => {
+usersRouter.get('/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
-    const userInfo = await db.query(`SELECT * FROM users WHERE id = ${userId}`);
+    const userInfo = await db.query(`SELECT * FROM users WHERE id = $(userId)`, { userId });
     res.status(200).json(keysToCamel(userInfo[0]) ?? []);
   } catch (err) {
     res.status(500).send(err.message);
   }
 });
 
-router.put('/:userId', async (req, res) => {
+usersRouter.put('/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
-    const { body: data } = req;
-    const updatedUser = await db.query(`UPDATE users SET 
-    ${data.id ? `id = '${data.id}', ` : ''}
-    ${data.role ? `role = '${data.role}', ` : ''}
-    ${data.firstName ? `first_name = '${data.firstName}', ` : ''}
-    ${data.lastName ? `last_name = '${data.lastName}', ` : ''}
-    ${data.phoneNumber ? `phone_number = '${data.phoneNumber}', ` : ''}
-    ${data.email ? `email = '${data.email}' ` : ''}
-     WHERE id = '${userId}' RETURNING *;`);
+    const { role, firstName, lastName, phoneNumber, email } = req.body;
+    const updatedUser = await db.query(
+      `UPDATE users SET 
+    ${role ? 'role = $(role), ' : ''}
+    ${firstName ? 'first_name = $(firstName), ' : ''}
+    ${lastName ? 'last_name = $(lastName), ' : ''}
+    ${phoneNumber ? 'phone_number = $(phoneNumber), ' : ''}
+    ${email ? 'email = $(email), ' : ''}
+    id = $(userId)
+     WHERE id = $(userId) RETURNING *;`,
+      { role, firstName, lastName, phoneNumber, email, userId },
+    );
     res.status(200).json(keysToCamel(updatedUser[0]) ?? []);
   } catch (err) {
     res.status(500).send(err.message);
   }
 });
 
-router.delete('/:userId', async (req, res) => {
+usersRouter.delete('/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
     const deletedUser =
-      (await db.query(`DELETE FROM users WHERE id = ${userId} RETURNING *;`)) ?? [];
+      (await db.query(`DELETE FROM users WHERE id = $(userId) RETURNING *;`, { userId })) ?? [];
     res.status(200).json(keysToCamel([deletedUser[0]]) ?? []);
   } catch (err) {
     res.status(500).send(err.message);
   }
 });
 
-module.exports = router;
+module.exports = usersRouter;
