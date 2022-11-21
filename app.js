@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 
+const donations = require('./routes/donations');
+
 require('dotenv').config();
 
 const s3UploadRouter = require('./routes/s3upload');
@@ -15,6 +17,8 @@ app.use(
   }),
 );
 
+app.use(express.json()); // for req.body
+app.use('/donations', donations);
 app.use('/s3Upload', s3UploadRouter);
 
 app.listen(PORT, () => {
