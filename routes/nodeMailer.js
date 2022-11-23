@@ -1,6 +1,6 @@
 const express = require('express');
 const transporter = require('../transporter');
-// const verifyToken = require('../services/authService');
+// TODO: add verifyToken
 
 const emailRouter = express();
 
@@ -17,11 +17,9 @@ emailRouter.post('/send', (req, res) => {
 
   transporter.sendMail(mail, (err) => {
     if (err) {
-      res.status(500).send('Fail');
-      console.log('fail');
+      res.status(500).send(`Transporter Error: ${err}`);
     } else {
-      res.status(200).send('Success');
-      console.log('sucess!!!');
+      res.status(200).send('Transporter Backend Successfully Sent');
     }
   });
 });
