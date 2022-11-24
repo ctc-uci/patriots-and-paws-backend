@@ -15,7 +15,7 @@ usersRouter.post('/', async (req, res) => {
       `INSERT INTO users VALUES($(id), $(role), $(firstName) , $(lastName), $(phoneNumber), $(email)) RETURNING *;`,
       { id, role, firstName, lastName, phoneNumber, email },
     );
-    res.status(200).json(keysToCamel(newUser[0]) ?? []);
+    res.status(200).json(keysToCamel(newUser) ?? []);
   } catch (err) {
     res.status(500).send(err.message);
   }
@@ -34,7 +34,7 @@ usersRouter.get('/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
     const userInfo = await db.query(`SELECT * FROM users WHERE id = $(userId)`, { userId });
-    res.status(200).json(keysToCamel(userInfo[0]) ?? []);
+    res.status(200).json(keysToCamel(userInfo) ?? []);
   } catch (err) {
     res.status(500).send(err.message);
   }
@@ -55,7 +55,7 @@ usersRouter.put('/:userId', async (req, res) => {
      WHERE id = $(userId) RETURNING *;`,
       { role, firstName, lastName, phoneNumber, email, userId },
     );
-    res.status(200).json(keysToCamel(updatedUser[0]) ?? []);
+    res.status(200).json(keysToCamel(updatedUser) ?? []);
   } catch (err) {
     res.status(500).send(err.message);
   }
@@ -66,7 +66,7 @@ usersRouter.delete('/:userId', async (req, res) => {
     const { userId } = req.params;
     const deletedUser =
       (await db.query(`DELETE FROM users WHERE id = $(userId) RETURNING *;`, { userId })) ?? [];
-    res.status(200).json(keysToCamel([deletedUser[0]]) ?? []);
+    res.status(200).json(keysToCamel(deletedUser) ?? []);
   } catch (err) {
     res.status(500).send(err.message);
   }

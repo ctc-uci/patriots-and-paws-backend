@@ -14,7 +14,7 @@ routesRouter.post('/', async (req, res) => {
       VALUES(${driverId ? '$(driverId), ' : ''} $(id)) RETURNING *;`,
       { driverId, id },
     );
-    res.status(200).json(keysToCamel(newRoute[0]) ?? []);
+    res.status(200).json(keysToCamel(newRoute) ?? []);
   } catch (err) {
     res.status(500).send(err.message);
   }
@@ -33,7 +33,7 @@ routesRouter.get('/:routeId', async (req, res) => {
   try {
     const { routeId } = req.params;
     const routeInfo = await db.query(`SELECT * FROM routes WHERE id = $(routeId);`, { routeId });
-    res.status(200).json(keysToCamel(routeInfo[0]) ?? []);
+    res.status(200).json(keysToCamel(routeInfo) ?? []);
   } catch (err) {
     res.status(500).send(err.message);
   }
@@ -49,7 +49,7 @@ routesRouter.put('/:routeId', async (req, res) => {
      WHERE id = $(routeId) RETURNING *;`,
       { driverId, routeId },
     );
-    res.status(200).json(keysToCamel(updatedRoute[0]) ?? []);
+    res.status(200).json(keysToCamel(updatedRoute) ?? []);
   } catch (err) {
     res.status(500).send(err.message);
   }
@@ -62,7 +62,7 @@ routesRouter.delete('/:routeId', async (req, res) => {
       routeId,
     });
 
-    res.status(200).json(keysToCamel(deletedRoute[0]) ?? []);
+    res.status(200).json(keysToCamel(deletedRoute) ?? []);
   } catch (err) {
     res.status(500).send(err.message);
   }
