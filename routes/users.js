@@ -4,24 +4,17 @@ const express = require('express');
 const userRouter = express();
 const admin = require('../firebase');
 const { db } = require('../server/db');
+const { isAlphaNumeric, keysToCamel } = require('../common/utils');
 
 userRouter.use(express.json());
-
-const isAlphaNumeric = (value) => {
-  if (!/^[0-9a-zA-Z]+$/.test(value)) {
-    throw new Error('User ID must be alphanumeric');
-  }
-};
 
 // Get all users
 userRouter.get('/', async (req, res) => {
   try {
     const users = await db.query(`SELECT * FROM users`);
-    res.send({
-      accounts: users,
-    });
+    res.status(200).send(keysToCamel(users));
   } catch (err) {
-    res.status(400).send(err.message);
+    res.status(500).send(err.message);
   }
 });
 
@@ -31,10 +24,8 @@ userRouter.get('/:userId', async (req, res) => {
     const { userId } = req.params;
     isAlphaNumeric(userId); // ID must be alphanumeric
 
-    const user = await db.query('SELECT * FROM users WHERE id = $1', [userId]);
-    res.send({
-      user: user[0],
-    });
+    const user = await db.query('SELECT * FROM users WHERE id = $(userId)', { userId });
+    res.status(200).send(keysToCamel(user));
   } catch (err) {
     res.status(400).send(err.message);
   }
@@ -49,7 +40,7 @@ userRouter.delete('/:userId', async (req, res) => {
     // Firebase delete
     await admin.auth().deleteUser(userId);
     // DB delete
-    await db.query('DELETE FROM users WHERE id = $1', [userId]);
+    await db.query('DELETE FROM users WHERE id = $(userId)', { userId });
 
     res.status(200).send(`Deleted user with ID: ${userId}`);
   } catch (err) {
@@ -58,38 +49,34 @@ userRouter.delete('/:userId', async (req, res) => {
 });
 
 // Add user to database
-userRouter.post('/create', async (req, res) => {
+userRouter.post('/', async (req, res) => {
   try {
     const { firstName, lastName, email, phoneNumber, role, userId } = req.body;
     isAlphaNumeric(userId); // ID must be alphanumeric
 
     const newUser = await db.query(
-      'INSERT INTO users (id, role, first_name, last_name, phone_number, email) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [userId, role, firstName, lastName, phoneNumber, email],
+      'INSERT INTO users ($(id), $(role), $(firstName), $(lastName), $(phoneNumber), $(email)) RETURNING *;',
+      { userId, role, firstName, lastName, phoneNumber, email },
     );
 
-    res.status(200).send({
-      newUser: newUser[0],
-    });
+    res.status(200).send(keysToCamel(newUser));
   } catch (err) {
     res.status(500).send(err.message);
   }
 });
 
 // Edit basic information for a specific user
-userRouter.put('/update/:userId', async (req, res) => {
+userRouter.put('/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
     isAlphaNumeric(userId); // ID must be alphanumeric
     const { firstName, lastName, email, phoneNumber } = req.body;
 
     const user = await db.query(
-      'UPDATE users SET first_name = $1, last_name = $2, phone_number = $3, email = $4 WHERE id = $5 RETURNING *',
-      [firstName, lastName, phoneNumber, email, userId],
+      'UPDATE users SET first_name = $(firstName), last_name = $(lastName), phone_number = $(phoneNumber), email = $(email) WHERE id = $(userId) RETURNING *',
+      { firstName, lastName, phoneNumber, email, userId },
     );
-    res.send({
-      user: user[0],
-    });
+    res.send(keysToCamel(user));
   } catch (err) {
     res.status(400).send(err.message);
   }
