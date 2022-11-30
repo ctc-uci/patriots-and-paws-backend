@@ -38,8 +38,8 @@ router.post('/', async (req, res) => {
 });
 
 router.put('/:picturesId', async (req, res) => {
-  const { picturesID } = req.params;
   try {
+    const { picturesID } = req.params;
     const { id, furnitureId, imageURL } = req.body;
     const updatedPictures = await db.query(
       `UPDATE pictures (
@@ -58,7 +58,7 @@ router.put('/:picturesId', async (req, res) => {
         picturesID,
       },
     );
-    res.status(200).json(updatedPictures);
+    res.status(200).json(keysToCamel(updatedPictures));
   } catch (err) {
     res.status(500).send(err.message);
   }
