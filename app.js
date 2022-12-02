@@ -2,8 +2,11 @@ const express = require('express');
 const cors = require('cors');
 
 const nodemailer = require('./routes/nodeMailer');
+const donations = require('./routes/donations');
 
 require('dotenv').config();
+
+const s3UploadRouter = require('./routes/s3upload');
 
 const app = express();
 
@@ -16,6 +19,9 @@ app.use(
 );
 
 app.use('/nodemailer', nodemailer);
+app.use(express.json()); // for req.body
+app.use('/donations', donations);
+app.use('/s3Upload', s3UploadRouter);
 
 app.listen(PORT, () => {
   console.log(`Server listening on ${PORT}`);
