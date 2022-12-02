@@ -18,10 +18,8 @@ emailRouter.post('/send', (req, res) => {
   transporter.sendMail(mail, (err) => {
     if (err) {
       res.status(500).send('Fail');
-      console.log('fail');
     } else {
       res.status(200).send('Success');
-      console.log('sucess!!!');
     }
   });
 });
