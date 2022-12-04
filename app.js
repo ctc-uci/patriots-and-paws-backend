@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 
+const users = require('./routes/users');
+const routes = require('./routes/routes');
 const donations = require('./routes/donations');
 
 require('dotenv').config();
@@ -18,6 +20,8 @@ app.use(
 );
 
 app.use(express.json()); // for req.body
+app.use('/users', users);
+app.use('/routes', routes);
 app.use('/donations', donations);
 app.use('/s3Upload', s3UploadRouter);
 
