@@ -64,8 +64,9 @@ usersRouter.put('/:userId', async (req, res) => {
 usersRouter.delete('/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
-    const deletedUser =
-      (await db.query(`DELETE FROM users WHERE id = $(userId) RETURNING *;`, { userId })) ?? [];
+    const deletedUser = await db.query(`DELETE FROM users WHERE id = $(userId) RETURNING *;`, {
+      userId,
+    });
     res.status(200).json(keysToCamel(deletedUser));
   } catch (err) {
     res.status(500).send(err.message);
