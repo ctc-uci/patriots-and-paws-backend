@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "cookie-parser": "^1.4.6",
+    "aws-sdk": "^2.1256.0",
     "cors": "^2.8.5",
     "dotenv": "^10.0.0",
     "eslint": "^8.1.0",
@@ -25,6 +26,7 @@
     "eslint-plugin-prettier": "^4.0.0",
     "express": "^4.17.1",
     "firebase-admin": "^11.3.0",
+    "express-promise-router": "^4.1.1",
     "nodemon": "^2.0.20",
     "pg": "^8.8.0",
     "pg-promise": "^10.12.1",

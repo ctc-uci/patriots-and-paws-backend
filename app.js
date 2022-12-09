@@ -5,8 +5,11 @@ const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
 // Routes
-const userRouter = require('./routes/users');
 const { authRouter, verifyToken } = require('./routes/auth');
+const users = require('./routes/users');
+const routes = require('./routes/routes');
+const donations = require('./routes/donations');
+const s3UploadRouter = require('./routes/s3upload');
 
 const app = express();
 
@@ -21,8 +24,12 @@ app.use(
 
 app.use(cookieParser());
 
-app.use('/users', userRouter);
+app.use(express.json()); // for req.body
 app.use('/auth', [verifyToken, authRouter]);
+app.use('/users', users);
+app.use('/routes', routes);
+app.use('/donations', donations);
+app.use('/s3Upload', s3UploadRouter);
 
 app.listen(PORT, () => {
   console.log(`Server listening on ${PORT}`);
