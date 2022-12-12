@@ -2,6 +2,7 @@ const express = require('express');
 
 const usersRouter = express.Router();
 
+const admin = require('../firebase');
 const { db } = require('../server/db');
 
 const { keysToCamel } = require('../common/utils');
@@ -64,6 +65,10 @@ usersRouter.put('/:userId', async (req, res) => {
 usersRouter.delete('/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
+
+    // Firebase delete
+    await admin.auth().deleteUser(userId);
+
     const deletedUser = await db.query(`DELETE FROM users WHERE id = $(userId) RETURNING *;`, {
       userId,
     });
