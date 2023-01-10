@@ -7,7 +7,24 @@ const router = express.Router();
 // get all donation rows
 router.get('/', async (req, res) => {
   try {
-    const allDonations = await db.query(`SELECT * FROM donations;`);
+    const allDonations = await db.query(
+      `SELECT
+        id,
+        route_id,
+        order_num,
+        status,
+        address_street,
+        address_unit,
+        address_city,
+        address_zip,
+        first_name,
+        last_name,
+        email,
+        phone_num,
+        notes,
+        submitted_date
+      FROM donations;`,
+    );
     res.status(200).json(keysToCamel(allDonations));
   } catch (err) {
     res.status(500).send(err.message);
@@ -18,9 +35,27 @@ router.get('/', async (req, res) => {
 router.get('/:donationId', async (req, res) => {
   try {
     const { donationId } = req.params;
-    const donation = await db.query(`SELECT * from donations WHERE id = $(donationId);`, {
-      donationId,
-    });
+    const donation = await db.query(
+      `SELECT
+        id,
+        route_id,
+        order_num,
+        status,
+        address_street,
+        address_unit,
+        address_city,
+        address_zip,
+        first_name,
+        last_name,
+        email,
+        phone_num,
+        notes,
+        submitted_date
+      FROM donations WHERE id = $(donationId);`,
+      {
+        donationId,
+      },
+    );
     res.status(200).json(keysToCamel(donation));
   } catch (err) {
     res.status(500).send(err.message);
@@ -43,7 +78,7 @@ router.post('/', async (req, res) => {
       email,
       phoneNum,
       notes,
-      date,
+      submittedDate,
     } = req.body;
     const donation = await db.query(
       `INSERT INTO donations (
@@ -54,7 +89,8 @@ router.post('/', async (req, res) => {
         address_city, address_zip, first_name,
         last_name, email, phone_num,
         ${notes ? 'notes, ' : ''}
-        ${date ? 'date, ' : ''}
+        ${submittedDate ? 'submitted_date, ' : ''}
+        ${submittedDate ? 'last_edited_date, ' : ''}
         status
         )
       VALUES (
@@ -65,7 +101,8 @@ router.post('/', async (req, res) => {
         $(addressCity), $(addressZip), $(firstName),
         $(lastName), $(email), $(phoneNum),
         ${notes ? '$(notes), ' : ''}
-        ${date ? '$(date), ' : ''}
+        ${submittedDate ? '$(submittedDate), ' : ''}
+        ${submittedDate ? '$(submittedDate), ' : ''}
         $(status)
       )
       RETURNING *;`,
@@ -82,7 +119,7 @@ router.post('/', async (req, res) => {
         email,
         phoneNum,
         notes,
-        date,
+        submittedDate,
       },
     );
     res.status(200).send(keysToCamel(donation));
@@ -108,8 +145,9 @@ router.put('/:donationId', async (req, res) => {
       email,
       phoneNum,
       notes,
-      date,
+      submittedDate,
     } = req.body;
+    const currDate = new Date();
     const donation = await db.query(
       `UPDATE donations
       SET
@@ -125,8 +163,8 @@ router.put('/:donationId', async (req, res) => {
         ${email ? 'email = $(email), ' : ''}
         ${phoneNum ? 'phone_num = $(phoneNum), ' : ''}
         ${notes ? 'notes = $(notes), ' : ''}
-        ${date ? 'date = $(date), ' : ''}
-        id = $(donationId)
+        ${submittedDate ? 'submitted_date = $(submittedDate), ' : ''}
+        last_edited_date = $(currDate)
       WHERE id = $(donationId)
       RETURNING *;`,
       {
@@ -143,7 +181,8 @@ router.put('/:donationId', async (req, res) => {
         email,
         phoneNum,
         notes,
-        date,
+        submittedDate,
+        currDate,
       },
     );
     res.status(200).send(keysToCamel(donation));

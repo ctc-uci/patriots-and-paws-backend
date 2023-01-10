@@ -1,4 +1,4 @@
 CREATE TABLE routes (
   id SERIAL PRIMARY KEY,
-  driver_id VARCHAR(256)
+  driver_id VARCHAR(256) REFERENCES users(id) ON DELETE CASCADE
 );
