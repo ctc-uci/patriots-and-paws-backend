@@ -1,6 +1,8 @@
 const express = require('express');
 const { keysToCamel } = require('../common/utils');
 const { db } = require('../server/db');
+const { insertPicture } = require('../common/pictureUtils');
+const { insertFurniture } = require('../common/furnitureUtils');
 
 const router = express.Router();
 
@@ -79,6 +81,8 @@ router.post('/', async (req, res) => {
       phoneNum,
       notes,
       submittedDate,
+      furniture,
+      pictures,
     } = req.body;
     const donation = await db.query(
       `INSERT INTO donations (
@@ -122,6 +126,14 @@ router.post('/', async (req, res) => {
         submittedDate,
       },
     );
+    // console.log(donation);
+    pictures.map(async ({ imageUrl, picNotes }) => {
+      await insertPicture(donation[0].id, imageUrl, picNotes);
+    });
+    furniture.map(async ({ name }) => {
+      await insertFurniture(donation[0].id, name);
+    });
+
     res.status(200).send(keysToCamel(donation));
   } catch (err) {
     res.status(500).send(err.message);
