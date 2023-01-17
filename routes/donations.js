@@ -11,22 +11,27 @@ router.get('/', async (req, res) => {
   try {
     const allDonations = await db.query(
       `SELECT
-        id,
-        route_id,
-        order_num,
-        status,
-        address_street,
-        address_unit,
-        address_city,
-        address_zip,
-        first_name,
-        last_name,
-        email,
-        phone_num,
-        notes,
-        submitted_date
-      FROM donations;`,
+        d.id, d.route_id, d.order_num, d.status,
+        d.address_street, d.address_city, d.address_unit,
+        d.address_zip, d.first_name, d.last_name, d.email,
+        d.phone_num, d.notes, d.submitted_date,
+        COALESCE(relation1.furniture, '{}') AS furniture,
+	      COALESCE(relation2.pictures, '{}') AS pictures
+      FROM donations AS d
+      LEFT JOIN (SELECT f.donation_id,
+              array_agg(json_build_object('id', f.id, 'name', f.name)) AS furniture
+              FROM furniture AS f
+              GROUP BY f.donation_id
+            ) AS relation1
+        ON relation1.donation_id = d.id
+      LEFT JOIN (SELECT pics.donation_id,
+              array_agg(json_build_object('id', pics.id, 'image_url', pics.image_url, 'notes', pics.notes)) AS pictures
+              FROM pictures AS pics
+              GROUP BY pics.donation_id
+            ) AS relation2
+        ON relation2.donation_id = d.id;`,
     );
+
     res.status(200).json(keysToCamel(allDonations));
   } catch (err) {
     res.status(500).send(err.message);
@@ -58,6 +63,17 @@ router.get('/:donationId', async (req, res) => {
         donationId,
       },
     );
+    const pictureRes = await db.query(`SELECT * FROM pictures WHERE donation_id = $(donationId);`, {
+      donationId,
+    });
+    donation[0].pictures = pictureRes;
+
+    const furnitureRes = await db.query(
+      `SELECT * FROM furniture WHERE donation_id = $(donationId);`,
+      { donationId },
+    );
+    donation[0].furniture = furnitureRes;
+    // console.log(donation);
     res.status(200).json(keysToCamel(donation));
   } catch (err) {
     res.status(500).send(err.message);
