@@ -73,7 +73,6 @@ router.get('/:donationId', async (req, res) => {
       { donationId },
     );
     donation[0].furniture = furnitureRes;
-    // console.log(donation);
     res.status(200).json(keysToCamel(donation));
   } catch (err) {
     res.status(500).send(err.message);
@@ -96,10 +95,10 @@ router.post('/', async (req, res) => {
       email,
       phoneNum,
       notes,
-      submittedDate,
       furniture,
       pictures,
     } = req.body;
+    const submittedDate = new Date();
     const donation = await db.query(
       `INSERT INTO donations (
         ${routeId ? 'route_id, ' : ''}
@@ -109,9 +108,7 @@ router.post('/', async (req, res) => {
         address_city, address_zip, first_name,
         last_name, email, phone_num,
         ${notes ? 'notes, ' : ''}
-        ${submittedDate ? 'submitted_date, ' : ''}
-        ${submittedDate ? 'last_edited_date, ' : ''}
-        status
+        submitted_date, last_edited_date, status
         )
       VALUES (
         ${routeId ? '$(routeId), ' : ''}
@@ -121,9 +118,7 @@ router.post('/', async (req, res) => {
         $(addressCity), $(addressZip), $(firstName),
         $(lastName), $(email), $(phoneNum),
         ${notes ? '$(notes), ' : ''}
-        ${submittedDate ? '$(submittedDate), ' : ''}
-        ${submittedDate ? '$(submittedDate), ' : ''}
-        $(status)
+        $(submittedDate), $(submittedDate), $(status)
       )
       RETURNING *;`,
       {
@@ -142,11 +137,10 @@ router.post('/', async (req, res) => {
         submittedDate,
       },
     );
-    // console.log(donation);
-    pictures.map(async ({ imageUrl, picNotes }) => {
+    pictures.forEach(async ({ imageUrl, notes: picNotes }) => {
       await insertPicture(donation[0].id, imageUrl, picNotes);
     });
-    furniture.map(async ({ name }) => {
+    furniture.forEach(async ({ name }) => {
       await insertFurniture(donation[0].id, name);
     });
 
@@ -173,7 +167,6 @@ router.put('/:donationId', async (req, res) => {
       email,
       phoneNum,
       notes,
-      submittedDate,
     } = req.body;
     const currDate = new Date();
     const donation = await db.query(
@@ -191,7 +184,6 @@ router.put('/:donationId', async (req, res) => {
         ${email ? 'email = $(email), ' : ''}
         ${phoneNum ? 'phone_num = $(phoneNum), ' : ''}
         ${notes ? 'notes = $(notes), ' : ''}
-        ${submittedDate ? 'submitted_date = $(submittedDate), ' : ''}
         last_edited_date = $(currDate)
       WHERE id = $(donationId)
       RETURNING *;`,
@@ -209,7 +201,6 @@ router.put('/:donationId', async (req, res) => {
         email,
         phoneNum,
         notes,
-        submittedDate,
         currDate,
       },
     );
