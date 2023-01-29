@@ -44,7 +44,7 @@ usersRouter.get('/:userId', async (req, res) => {
 usersRouter.put('/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
-    const { role, firstName, lastName, phoneNumber, email } = req.body;
+    const { role, firstName, lastName, phoneNumber, email, newPassword } = req.body;
     const updatedUser = await db.query(
       `UPDATE users SET 
     ${role ? 'role = $(role), ' : ''}
@@ -56,6 +56,9 @@ usersRouter.put('/:userId', async (req, res) => {
      WHERE id = $(userId) RETURNING *;`,
       { role, firstName, lastName, phoneNumber, email, userId },
     );
+    if (newPassword) {
+      await admin.auth().updateUser(userId, { password: newPassword });
+    }
     res.status(200).json(keysToCamel(updatedUser));
   } catch (err) {
     res.status(500).send(err.message);
