@@ -1,4 +1,5 @@
 const express = require('express');
+const { nanoid } = require('nanoid');
 const { keysToCamel } = require('../common/utils');
 const { db } = require('../server/db');
 
@@ -11,6 +12,19 @@ router.get('/', async (req, res) => {
     res.status(200).json(keysToCamel(allDonations));
   } catch (err) {
     res.status(500).send(err.message);
+  }
+});
+
+router.get('/verify', async (req, res) => {
+  const { email, donationId } = req.body;
+  const donation = await db.query(`SELECT email FROM donations WHERE id = $(donationId);`, {
+    donationId,
+  });
+
+  if (donation[0].email === email) {
+    res.status(200).send('success');
+  } else {
+    res.status(500).send('donation id and email do not match');
   }
 });
 
@@ -45,8 +59,10 @@ router.post('/', async (req, res) => {
       notes,
       date,
     } = req.body;
+    const id = nanoid();
     const donation = await db.query(
       `INSERT INTO donations (
+        id,
         ${routeId ? 'route_id, ' : ''}
         ${orderNum ? 'order_num, ' : ''}
         address_street,
@@ -58,6 +74,7 @@ router.post('/', async (req, res) => {
         status
         )
       VALUES (
+        $(id),
         ${routeId ? '$(routeId), ' : ''}
         ${orderNum ? '$(orderNum), ' : ''}
         $(addressStreet),
@@ -70,6 +87,7 @@ router.post('/', async (req, res) => {
       )
       RETURNING *;`,
       {
+        id,
         routeId,
         orderNum,
         status,
