@@ -1,11 +1,11 @@
-DROP TYPE status;
-DROP TABLE donations;
+DROP TYPE IF EXISTS status;
+DROP TABLE IF EXISTS donations;
 
 CREATE TYPE status AS ENUM ('pending', 'approved', 'denied', 'flagged', 'scheduling', 'scheduled', 'picked up', 'failed');
 
 CREATE TABLE donations (
    id SERIAL PRIMARY KEY,
-   route_id INT REFERENCES routes(id) ON DELETE CASCADE,
+   route_id INT REFERENCES routes(id) ON DELETE SET NULL,
    order_num INT,
    status status NOT NULL,
    address_street VARCHAR(256) NOT NULL,
