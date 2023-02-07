@@ -1,3 +1,6 @@
+DROP TYPE IF EXISTS role;
+DROP TABLE IF EXISTS users;
+
 CREATE TYPE role as ENUM('superadmin', 'admin', 'driver');
 
 CREATE TABLE users (

@@ -1,7 +1,7 @@
 DROP TYPE IF EXISTS status;
 DROP TABLE IF EXISTS donations;
 
-CREATE TYPE status AS ENUM ('pending', 'approved', 'denied', 'flagged', 'scheduling', 'scheduled', 'picked up', 'failed');
+CREATE TYPE status AS ENUM ('pending', 'approved', 'changes requested', 'scheduling', 'scheduled', 'archived');
 
 CREATE TABLE donations (
    id SERIAL PRIMARY KEY,
