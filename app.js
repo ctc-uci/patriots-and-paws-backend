@@ -11,6 +11,8 @@ const routes = require('./routes/routes');
 const donations = require('./routes/donations');
 const s3UploadRouter = require('./routes/s3upload');
 const nodemailer = require('./routes/nodeMailer');
+const pictures = require('./routes/pictures');
+const furniture = require('./routes/furniture');
 
 const app = express();
 
@@ -32,6 +34,8 @@ app.use('/routes', routes);
 app.use('/donations', donations);
 app.use('/s3Upload', s3UploadRouter);
 app.use('/nodemailer', nodemailer);
+app.use('/pictures', pictures);
+app.use('/furniture', furniture);
 
 app.listen(PORT, () => {
   console.log(`Server listening on ${PORT}`);
