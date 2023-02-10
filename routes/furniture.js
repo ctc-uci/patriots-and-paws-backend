@@ -1,7 +1,6 @@
-import { keysToCamel } from '../common/utils';
-
 const express = require('express');
 const { db } = require('../server/db');
+const { keysToCamel } = require('../common/utils');
 
 const router = express.Router();
 
@@ -9,6 +8,16 @@ router.get('/', async (req, res) => {
   try {
     const furniture = await db.query('SELECT * FROM furniture');
     res.status(200).json(keysToCamel(furniture));
+    // await db.query(
+    //   `INSERT INTO furniture (count)
+    //     VALUES (
+    //         $(count)
+    //     )
+    //     RETURNING *;`,
+    //   {
+    //   res.count,
+    //   },
+    // );
   } catch (err) {
     res.status(500).send(err.message);
   }
@@ -18,7 +27,7 @@ router.post('/', async (req, res) => {
   try {
     const { id, donationId, name, description, notes } = req.body;
     const furniture = await db.query(
-      `INSERT INTO furniture (id, donationId, name,
+      `INSERT INTO furniture (id, donationId, name)
             ${description ? ', description' : ''}
             ${notes ? ', notes' : ''})
         VALUES (
