@@ -8,11 +8,11 @@ routesRouter.use(express.json());
 
 routesRouter.post('/', async (req, res) => {
   try {
-    const { id, driverId, name, date } = req.body;
+    const { driverId, name, date } = req.body;
     const newRoute = await db.query(
-      `INSERT INTO routes (id, driver_id, name, date)
-      VALUES($(id), $(driverId), $(name), $(date)) RETURNING *;`,
-      { id, driverId, name, date },
+      `INSERT INTO routes (name, ${driverId ? 'driver_id,' : ''} date)
+      VALUES($(name), ${driverId ? '$(driverId),' : ''} $(date)) RETURNING *;`,
+      { driverId, name, date },
     );
     res.status(200).json(keysToCamel(newRoute));
   } catch (err) {
@@ -53,10 +53,10 @@ routesRouter.get('/:routeId', async (req, res) => {
     const { routeId } = req.params;
     const routeInfo = await db.query(`SELECT * FROM routes WHERE id = $(routeId);`, { routeId });
 
-    const donationRes = await db.query(`SELECT * FROM donations WHERE routeId = $(routeId);`, {
+    const donationRes = await db.query(`SELECT * FROM donations WHERE route_id = $(routeId);`, {
       routeId,
     });
-    routeInfo[0].pictures = donationRes;
+    routeInfo[0].donations = donationRes;
 
     res.status(200).json(keysToCamel(routeInfo));
   } catch (err) {

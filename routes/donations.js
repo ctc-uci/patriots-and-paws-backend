@@ -1,8 +1,6 @@
 const express = require('express');
 const { keysToCamel } = require('../common/utils');
 const { db } = require('../server/db');
-const { insertPicture } = require('../common/pictureUtils');
-const { insertFurniture } = require('../common/furnitureUtils');
 
 const router = express.Router();
 
@@ -11,25 +9,30 @@ router.get('/', async (req, res) => {
   try {
     const allDonations = await db.query(
       `SELECT
-        d.id, d.route_id, d.order_num, d.status,
-        d.address_street, d.address_city, d.address_unit,
-        d.address_zip, d.first_name, d.last_name, d.email,
-        d.phone_num, d.notes, d.submitted_date,
-        COALESCE(relation1.furniture, '{}') AS furniture,
-	      COALESCE(relation2.pictures, '{}') AS pictures
-      FROM donations AS d
-      LEFT JOIN (SELECT f.donation_id,
-              array_agg(json_build_object('id', f.id, 'name', f.name)) AS furniture
-              FROM furniture AS f
-              GROUP BY f.donation_id
-            ) AS relation1
-        ON relation1.donation_id = d.id
-      LEFT JOIN (SELECT pics.donation_id,
-              array_agg(json_build_object('id', pics.id, 'image_url', pics.image_url, 'notes', pics.notes)) AS pictures
-              FROM pictures AS pics
-              GROUP BY pics.donation_id
-            ) AS relation2
-        ON relation2.donation_id = d.id;`,
+      d.id, d.route_id, d.order_num, d.status,
+      d.address_street, d.address_city, d.address_unit,
+      d.address_zip, d.first_name, d.last_name, d.email,
+      d.phone_num, d.notes, d.submitted_date, relation3.pickup_date,
+      COALESCE(relation1.furniture, '{}') AS furniture,
+      COALESCE(relation2.pictures, '{}') AS pictures
+    FROM donations AS d
+    LEFT JOIN (SELECT f.donation_id,
+            array_agg(json_build_object('id', f.id, 'name', f.name)) AS furniture
+            FROM furniture AS f
+            GROUP BY f.donation_id
+          ) AS relation1
+      ON relation1.donation_id = d.id
+    LEFT JOIN (SELECT pics.donation_id,
+            array_agg(json_build_object('id', pics.id, 'image_url', pics.image_url, 'notes', pics.notes)) AS pictures
+            FROM pictures AS pics
+            GROUP BY pics.donation_id
+          ) AS relation2
+      ON relation2.donation_id = d.id
+  LEFT JOIN (
+        SELECT id AS route_id, date as pickup_date
+        FROM routes
+      ) AS relation3
+    ON relation3.route_id = d.route_id;`,
     );
 
     res.status(200).json(keysToCamel(allDonations));
@@ -83,9 +86,6 @@ router.get('/:donationId', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const {
-      routeId,
-      orderNum,
-      status,
       addressStreet,
       addressUnit,
       addressCity,
@@ -98,11 +98,10 @@ router.post('/', async (req, res) => {
       furniture,
       pictures,
     } = req.body;
+    const status = 'pending';
     const submittedDate = new Date();
     const donation = await db.query(
       `INSERT INTO donations (
-        ${routeId ? 'route_id, ' : ''}
-        ${orderNum ? 'order_num, ' : ''}
         address_street,
         ${addressUnit ? 'address_unit, ' : ''}
         address_city, address_zip, first_name,
@@ -111,8 +110,6 @@ router.post('/', async (req, res) => {
         submitted_date, last_edited_date, status
         )
       VALUES (
-        ${routeId ? '$(routeId), ' : ''}
-        ${orderNum ? '$(orderNum), ' : ''}
         $(addressStreet),
         ${addressUnit ? '$(addressUnit), ' : ''}
         $(addressCity), $(addressZip), $(firstName),
@@ -122,8 +119,6 @@ router.post('/', async (req, res) => {
       )
       RETURNING *;`,
       {
-        routeId,
-        orderNum,
         status,
         addressStreet,
         addressUnit,
@@ -137,12 +132,43 @@ router.post('/', async (req, res) => {
         submittedDate,
       },
     );
-    pictures.forEach(async ({ imageUrl, notes: picNotes }) => {
-      await insertPicture(donation[0].id, imageUrl, picNotes);
-    });
-    furniture.forEach(async ({ name }) => {
-      await insertFurniture(donation[0].id, name);
-    });
+
+    const paddedPics = pictures.map(({ notes: note, imageUrl }) => ({
+      notes: note ?? '',
+      imageUrl,
+    }));
+    const notesArray = paddedPics.map(({ notes: note }) => note);
+    const urlArray = paddedPics.map(({ imageUrl: url }) => url);
+    const donationId = donation[0].id;
+
+    const picturesRes = await db.query(
+      `INSERT INTO pictures(donation_id, image_url, notes) 
+      SELECT $(donationId) donation_id, notes, imageURL FROM
+          unnest(
+            $(notesArray),
+            $(urlArray)
+          ) AS data(notes, imageURL)
+        RETURNING *;`,
+      { donationId, notesArray, urlArray },
+    );
+
+    const nameArray = furniture.map(({ name }) => name);
+    const countArray = furniture.map(({ count }) => count);
+
+    const furnitureRes = await db.query(
+      `INSERT INTO furniture(donation_id, name, count) 
+      SELECT $(donationId) donation_id, name, count
+      FROM
+          unnest(
+            $(nameArray),
+            $(countArray)
+          ) AS data(name, count)
+      RETURNING *;`,
+      { donationId, nameArray, countArray },
+    );
+
+    donation[0].pictures = picturesRes;
+    donation[0].furniture = furnitureRes;
 
     res.status(200).send(keysToCamel(donation));
   } catch (err) {

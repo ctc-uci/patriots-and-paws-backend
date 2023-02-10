@@ -17,6 +17,6 @@ CREATE TABLE donations (
    email VARCHAR(256) NOT NULL,
    phone_num VARCHAR(15) NOT NULL,
    notes VARCHAR(256),
-   submitted_date date,
-   last_edited_date date
+   submitted_date date NOT NULL,
+   last_edited_date date NOT NULL
 );
