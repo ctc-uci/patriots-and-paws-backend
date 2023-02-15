@@ -1,6 +1,5 @@
-DROP TABLE IF EXISTS furnitureOptions;
+DROP TABLE IF EXISTS furniture_options;
 CREATE TABLE furniture_options (
-   id SERIAL PRIMARY KEY,
-   name VARCHAR(256) NOT NULL,
+   name VARCHAR(256) PRIMARY KEY,
    accepted BOOLEAN NOT NULL
 );
