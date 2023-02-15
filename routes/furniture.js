@@ -27,7 +27,7 @@ router.post('/', async (req, res) => {
   try {
     const { id, donationId, name, description, notes } = req.body;
     const furniture = await db.query(
-      `INSERT INTO furniture (id, donationId, name)
+      `INSERT INTO furniture (id, donationId, name
             ${description ? ', description' : ''}
             ${notes ? ', notes' : ''})
         VALUES (
