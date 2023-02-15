@@ -1,6 +1,6 @@
-import { keysToCamel } from '../common/utils';
-
 const express = require('express');
+
+const { keysToCamel } = require('../common/utils');
 const { db } = require('../server/db');
 
 const router = express.Router();
@@ -16,19 +16,19 @@ router.get('/', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { id, furnitureId, imageURL } = req.body;
+    const { donationId, imageUrl, notes } = req.body;
     const pictures = await db.query(
       `INSERT INTO pictures (
-        id, furnitureId, imageURL,
+        donation_id, ${notes ? 'notes, ' : ''} image_url
         )
       VALUES (
-        $(id), $(furnitureId), $(imageURL)
+        $(donationId), ${notes ? '$(notes), ' : ''} $(imageURL)
         )
       RETURNING *;`,
       {
-        id,
-        furnitureId,
-        imageURL,
+        donationId,
+        notes,
+        imageUrl,
       },
     );
     res.status(200).json(keysToCamel(pictures));
@@ -39,23 +39,20 @@ router.post('/', async (req, res) => {
 
 router.put('/:picturesId', async (req, res) => {
   try {
-    const { picturesID } = req.params;
-    const { id, furnitureId, imageURL } = req.body;
+    const { picturesId } = req.params;
+    const { imageUrl, notes } = req.body;
     const updatedPictures = await db.query(
-      `UPDATE pictures (
-        id, furnitureId, imageURL,
-        )
+      `UPDATE pictures
       SET
-        id = $(id),
-        furnitureId = $(furnitureId),
-        imageURL = $(imageURL)
-      WHERE id = $(picturesID)
+        ${notes ? 'notes = $(notes), ' : ''}
+        ${imageUrl ? 'image_url = $(imageUrl), ' : ''}
+        id = $(picturesId)
+      WHERE id = $(picturesId)
       RETURNING *;`,
       {
-        id,
-        furnitureId,
-        imageURL,
-        picturesID,
+        imageUrl,
+        notes,
+        picturesId,
       },
     );
     res.status(200).json(keysToCamel(updatedPictures));

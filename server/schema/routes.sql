@@ -1,4 +1,8 @@
+DROP TABLE IF EXISTS routes;
+
 CREATE TABLE routes (
   id SERIAL PRIMARY KEY,
-  driver_id VARCHAR(256)
+  driver_id VARCHAR(256) REFERENCES users(id) ON DELETE SET NULL,
+  name VARCHAR(256) NOT NULL,
+  date date NOT NULL
 );
