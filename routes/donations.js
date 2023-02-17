@@ -133,38 +133,26 @@ router.post('/', async (req, res) => {
       },
     );
 
-    const paddedPics = pictures.map(({ notes: note, imageUrl }) => ({
-      notes: note ?? '',
-      imageUrl,
-    }));
-    const notesArray = paddedPics.map(({ notes: note }) => note);
-    const urlArray = paddedPics.map(({ imageUrl: url }) => url);
     const donationId = donation[0].id;
 
     const picturesRes = await db.query(
-      `INSERT INTO pictures(donation_id, image_url, notes) 
-      SELECT $(donationId) donation_id, notes, imageURL FROM
-          unnest(
-            $(notesArray),
-            $(urlArray)
-          ) AS data(notes, imageURL)
-        RETURNING *;`,
-      { donationId, notesArray, urlArray },
+      `INSERT INTO pictures(donation_id, image_url, notes)
+      SELECT $(donationId), "imageUrl", notes
+      FROM
+          json_to_recordset($(pictures:json))
+      AS data("imageUrl" text, notes text)
+      RETURNING *;`,
+      { donationId, pictures },
     );
 
-    const nameArray = furniture.map(({ name }) => name);
-    const countArray = furniture.map(({ count }) => count);
-
     const furnitureRes = await db.query(
-      `INSERT INTO furniture(donation_id, name, count) 
-      SELECT $(donationId) donation_id, name, count
+      `INSERT INTO furniture(donation_id, name, count)
+      SELECT $(donationId), name, count
       FROM
-          unnest(
-            $(nameArray),
-            $(countArray)
-          ) AS data(name, count)
+          json_to_recordset($(furniture:json))
+      AS data(name text, count integer)
       RETURNING *;`,
-      { donationId, nameArray, countArray },
+      { donationId, furniture },
     );
 
     donation[0].pictures = picturesRes;
