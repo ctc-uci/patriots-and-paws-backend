@@ -11,11 +11,13 @@ const s3 = new aws.S3({
 });
 
 // get a S3 URL
-s3UploadRouter.get('/', async (req, res) => {
+s3UploadRouter.get('/:extension', async (req, res) => {
   try {
+    const { extension } = req.params;
+
     // generate a unique name for image
     const rawBytes = await crypto.randomBytes(16);
-    const imageName = rawBytes.toString('hex');
+    const imageName = `${rawBytes.toString('hex')}.${extension}`;
 
     // set up s3 params
     const params = {
