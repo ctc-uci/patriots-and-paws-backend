@@ -16,8 +16,8 @@
     "*.js": "yarn run eslint"
   },
   "dependencies": {
-    "cookie-parser": "^1.4.6",
     "aws-sdk": "^2.1256.0",
+    "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "dotenv": "^10.0.0",
     "eslint": "^8.1.0",
@@ -25,9 +25,10 @@
     "eslint-plugin-import": "^2.25.2",
     "eslint-plugin-prettier": "^4.0.0",
     "express": "^4.17.1",
-    "nodemailer": "^6.8.0",
-    "firebase-admin": "^11.3.0",
     "express-promise-router": "^4.1.1",
+    "firebase-admin": "^11.3.0",
+    "node-schedule": "^2.1.1",
+    "nodemailer": "^6.8.0",
     "nodemon": "^2.0.20",
     "pg": "^8.8.0",
     "pg-promise": "^10.12.1",

@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const schedule = require('node-schedule');
 
 require('dotenv').config();
 
@@ -13,6 +14,14 @@ const s3UploadRouter = require('./routes/s3upload');
 const nodemailer = require('./routes/nodeMailer');
 const pictures = require('./routes/pictures');
 const furniture = require('./routes/furniture');
+
+// Node Schedule jobs
+const { deleteRoutes, testFunction } = require('./nodeScheduler');
+
+// TODO: delete test code later
+schedule.scheduleJob('*/1 * * * *', testFunction);
+// delete routes at 12 AM on the 1st and 15th of every month
+schedule.scheduleJob('0 0 1,15 * *', deleteRoutes);
 
 const app = express();
 
