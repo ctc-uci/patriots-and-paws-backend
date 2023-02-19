@@ -23,8 +23,15 @@ usersRouter.post('/', async (req, res) => {
 });
 
 usersRouter.get('/', async (req, res) => {
+  const { numUsers, pageNum } = req.body;
   try {
-    const allUsers = await db.query(`SELECT * FROM users;`);
+    const allUsers = await db.query(
+      `SELECT * FROM users
+       ORDER BY id
+       LIMIT ${numUsers}
+       ${pageNum ? `OFFSET ${(pageNum - 1) * numUsers}` : ''};`,
+      { numUsers, pageNum },
+    );
     res.status(200).json(keysToCamel(allUsers));
   } catch (err) {
     res.status(500).send(err.message);
@@ -46,7 +53,7 @@ usersRouter.put('/:userId', async (req, res) => {
     const { userId } = req.params;
     const { role, firstName, lastName, phoneNumber, email, newPassword } = req.body;
     const updatedUser = await db.query(
-      `UPDATE users SET 
+      `UPDATE users SET
     ${role ? 'role = $(role), ' : ''}
     ${firstName ? 'first_name = $(firstName), ' : ''}
     ${lastName ? 'last_name = $(lastName), ' : ''}

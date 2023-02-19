@@ -6,6 +6,7 @@ const router = express.Router();
 
 // get all donation rows
 router.get('/', async (req, res) => {
+  const { numDonations, pageNum } = req.body;
   try {
     const allDonations = await db.query(
       `SELECT
@@ -32,7 +33,12 @@ router.get('/', async (req, res) => {
         SELECT id AS route_id, date as pickup_date
         FROM routes
       ) AS relation3
-    ON relation3.route_id = d.route_id;`,
+    ON relation3.route_id = d.route_id
+    GROUP BY id
+    LIMIT ${numDonations}
+    ${pageNum ? `OFFSET ${(pageNum - 1) * numDonations}` : ''}
+    ;`,
+      { numDonations, pageNum },
     );
 
     res.status(200).json(keysToCamel(allDonations));
@@ -142,7 +148,7 @@ router.post('/', async (req, res) => {
     const donationId = donation[0].id;
 
     const picturesRes = await db.query(
-      `INSERT INTO pictures(donation_id, image_url, notes) 
+      `INSERT INTO pictures(donation_id, image_url, notes)
       SELECT $(donationId) donation_id, notes, imageURL FROM
           unnest(
             $(notesArray),
@@ -156,7 +162,7 @@ router.post('/', async (req, res) => {
     const countArray = furniture.map(({ count }) => count);
 
     const furnitureRes = await db.query(
-      `INSERT INTO furniture(donation_id, name, count) 
+      `INSERT INTO furniture(donation_id, name, count)
       SELECT $(donationId) donation_id, name, count
       FROM
           unnest(
