@@ -21,6 +21,14 @@ routesRouter.post('/', async (req, res) => {
 });
 
 routesRouter.get('/', async (req, res) => {
+  // should return all donations (and associated furniture/images) associated with routes
+  /*
+    for each route:
+      return the routes table info + associated driver
+      for each donation associated with the route:
+        return the donation table info + associated furniture & pictures
+        note: ORDER BY donations.order before json-ifying
+  */
   try {
     const allRoutes = await db.query(
       `SELECT
@@ -37,6 +45,7 @@ routesRouter.get('/', async (req, res) => {
 });
 
 routesRouter.get('/driver/:driverId', async (req, res) => {
+  // should return all donations (and associated furniture/images) associated with routes
   try {
     const { driverId } = req.params;
     const driverRoutes = await db.query(`SELECT * FROM routes WHERE driver_id = $(driverId);`, {
@@ -49,6 +58,7 @@ routesRouter.get('/driver/:driverId', async (req, res) => {
 });
 
 routesRouter.get('/:routeId', async (req, res) => {
+  // should return all donations (and associated furniture/images) associated with route
   try {
     const { routeId } = req.params;
     const routeInfo = await db.query(`SELECT * FROM routes WHERE id = $(routeId);`, { routeId });
@@ -84,6 +94,7 @@ routesRouter.put('/:routeId', async (req, res) => {
 });
 
 routesRouter.delete('/:routeId', async (req, res) => {
+  // double check if this recursively deletes in donations (or if it even allows you to delete without CASCADE keyword)
   try {
     const { routeId } = req.params;
     const deletedRoute = await db.query(`DELETE FROM routes WHERE id = $(routeId) RETURNING *;`, {

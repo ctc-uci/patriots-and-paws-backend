@@ -17,7 +17,7 @@ router.get('/', async (req, res) => {
       COALESCE(relation2.pictures, '{}') AS pictures
     FROM donations AS d
     LEFT JOIN (SELECT f.donation_id,
-            array_agg(json_build_object('id', f.id, 'name', f.name)) AS furniture
+            array_agg(json_build_object('id', f.id, 'name', f.name, 'count', f.count)) AS furniture
             FROM furniture AS f
             GROUP BY f.donation_id
           ) AS relation1
@@ -46,8 +46,7 @@ router.get('/:donationId', async (req, res) => {
   try {
     const { donationId } = req.params;
     const donation = await db.query(
-      `SELECT
-        id,
+      `SELECT id,
         route_id,
         order_num,
         status,
@@ -60,22 +59,43 @@ router.get('/:donationId', async (req, res) => {
         email,
         phone_num,
         notes,
-        submitted_date
-      FROM donations WHERE id = $(donationId);`,
+        submitted_date,
+        COALESCE(relation1.furniture, '{}') AS furniture,
+        COALESCE(relation2.pictures, '{}') AS pictures
+      FROM (
+        SELECT
+          id,
+          route_id,
+          order_num,
+          status,
+          address_street,
+          address_unit,
+          address_city,
+          address_zip,
+          first_name,
+          last_name,
+          email,
+          phone_num,
+          notes,
+          submitted_date
+        FROM donations WHERE id = $(donationId)
+        ) as donation
+      LEFT JOIN (SELECT f.donation_id,
+              array_agg(json_build_object('id', f.id, 'name', f.name, 'count', f.count)) AS furniture
+              FROM furniture AS f
+              GROUP BY f.donation_id
+            ) AS relation1
+        ON relation1.donation_id = donation.id
+      LEFT JOIN (SELECT pics.donation_id,
+              array_agg(json_build_object('id', pics.id, 'image_url', pics.image_url, 'notes', pics.notes)) AS pictures
+              FROM pictures AS pics
+              GROUP BY pics.donation_id
+            ) AS relation2
+        ON relation2.donation_id = donation.id;`,
       {
         donationId,
       },
     );
-    const pictureRes = await db.query(`SELECT * FROM pictures WHERE donation_id = $(donationId);`, {
-      donationId,
-    });
-    donation[0].pictures = pictureRes;
-
-    const furnitureRes = await db.query(
-      `SELECT * FROM furniture WHERE donation_id = $(donationId);`,
-      { donationId },
-    );
-    donation[0].furniture = furnitureRes;
     res.status(200).json(keysToCamel(donation));
   } catch (err) {
     res.status(500).send(err.message);
@@ -166,6 +186,7 @@ router.post('/', async (req, res) => {
 
 // update info for a specific donation
 router.put('/:donationId', async (req, res) => {
+  // add update furniture & pictures (can do this in multiple queries, not super inefficient as we won't be updating more than a certain number of rows at a time)
   try {
     const { donationId } = req.params;
     const {

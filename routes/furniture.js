@@ -16,16 +16,17 @@ router.get('/', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { donationId, name } = req.body;
+    const { donationId, name, count } = req.body;
     const furniture = await db.query(
-      `INSERT INTO furniture ( donation_id, name)
+      `INSERT INTO furniture ( donation_id, name, count)
         VALUES (
-          $(donationId), $(name)
+          $(donationId), $(name), $(count)
           )
         RETURNING *;`,
       {
         donationId,
         name,
+        count,
       },
     );
     res.status(200).json(keysToCamel(furniture));
@@ -37,18 +38,20 @@ router.post('/', async (req, res) => {
 router.put('/:furnitureId', async (req, res) => {
   try {
     const { furnitureId } = req.params;
-    const { donationId, name } = req.body;
+    const { donationId, name, count } = req.body;
     const updatedFurniture = await db.query(
       `UPDATE furniture
          SET
             ${donationId ? 'donation_id = $(donationId), ' : ''}
             ${name ? 'name = $(name),' : ''}
+            ${count ? 'count = $(count),' : ''}
             id = $(furnitureId)
         WHERE id = $(furnitureId)
         RETURNING *`,
       {
         donationId,
         name,
+        count,
         furnitureId,
       },
     );
