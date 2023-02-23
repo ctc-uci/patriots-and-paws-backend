@@ -4,7 +4,7 @@ DROP TABLE IF EXISTS donations;
 CREATE TYPE status AS ENUM ('pending', 'approved', 'changes requested', 'scheduling', 'scheduled', 'archived');
 
 CREATE TABLE donations (
-   id SERIAL PRIMARY KEY,
+   id VARCHAR(6) PRIMARY KEY,
    route_id INT REFERENCES routes(id) ON DELETE SET NULL,
    order_num INT,
    status status NOT NULL,
