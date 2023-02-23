@@ -105,7 +105,7 @@ router.post('/', async (req, res) => {
     const submittedDate = new Date();
     const donation = await db.query(
       `INSERT INTO donations (
-        address_street,
+        id, address_street,
         ${addressUnit ? 'address_unit, ' : ''}
         address_city, address_zip, first_name,
         last_name, email, phone_num,
@@ -113,10 +113,7 @@ router.post('/', async (req, res) => {
         submitted_date, last_edited_date, status
         )
       VALUES (
-        $(id),
-        ${routeId ? '$(routeId), ' : ''}
-        ${orderNum ? '$(orderNum), ' : ''}
-        $(addressStreet),
+        $(id), $(addressStreet),
         ${addressUnit ? '$(addressUnit), ' : ''}
         $(addressCity), $(addressZip), $(firstName),
         $(lastName), $(email), $(phoneNum),
@@ -126,8 +123,6 @@ router.post('/', async (req, res) => {
       RETURNING *;`,
       {
         id,
-        routeId,
-        orderNum,
         status,
         addressStreet,
         addressUnit,
