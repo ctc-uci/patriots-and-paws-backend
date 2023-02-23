@@ -26,6 +26,9 @@ s3UploadRouter.get('/:extension', async (req, res) => {
       Expires: 60,
     };
 
+    console.log('Image key is: ', imageName);
+    console.log('Params are: ', params);
+
     // get a s3 upload url
     const uploadURL = await s3.getSignedUrl('putObject', params);
     res.status(200).send(uploadURL);
