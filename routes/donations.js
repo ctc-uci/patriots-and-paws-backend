@@ -8,7 +8,34 @@ const router = express.Router();
 // get all donation rows
 router.get('/', async (req, res) => {
   try {
-    const allDonations = await db.query(`SELECT * FROM donations;`);
+    const allDonations = await db.query(
+      `SELECT
+      d.id, d.route_id, d.order_num, d.status,
+      d.address_street, d.address_city, d.address_unit,
+      d.address_zip, d.first_name, d.last_name, d.email,
+      d.phone_num, d.notes, d.submitted_date, relation3.pickup_date,
+      COALESCE(relation1.furniture, '{}') AS furniture,
+      COALESCE(relation2.pictures, '{}') AS pictures
+    FROM donations AS d
+    LEFT JOIN (SELECT f.donation_id,
+            array_agg(json_build_object('id', f.id, 'name', f.name)) AS furniture
+            FROM furniture AS f
+            GROUP BY f.donation_id
+          ) AS relation1
+      ON relation1.donation_id = d.id
+    LEFT JOIN (SELECT pics.donation_id,
+            array_agg(json_build_object('id', pics.id, 'image_url', pics.image_url, 'notes', pics.notes)) AS pictures
+            FROM pictures AS pics
+            GROUP BY pics.donation_id
+          ) AS relation2
+      ON relation2.donation_id = d.id
+  LEFT JOIN (
+        SELECT id AS route_id, date as pickup_date
+        FROM routes
+      ) AS relation3
+    ON relation3.route_id = d.route_id;`,
+    );
+
     res.status(200).json(keysToCamel(allDonations));
   } catch (err) {
     res.status(500).send(err.message);
@@ -19,9 +46,37 @@ router.get('/', async (req, res) => {
 router.get('/:donationId', async (req, res) => {
   try {
     const { donationId } = req.params;
-    const donation = await db.query(`SELECT * from donations WHERE id = $(donationId);`, {
+    const donation = await db.query(
+      `SELECT
+        id,
+        route_id,
+        order_num,
+        status,
+        address_street,
+        address_unit,
+        address_city,
+        address_zip,
+        first_name,
+        last_name,
+        email,
+        phone_num,
+        notes,
+        submitted_date
+      FROM donations WHERE id = $(donationId);`,
+      {
+        donationId,
+      },
+    );
+    const pictureRes = await db.query(`SELECT * FROM pictures WHERE donation_id = $(donationId);`, {
       donationId,
     });
+    donation[0].pictures = pictureRes;
+
+    const furnitureRes = await db.query(
+      `SELECT * FROM furniture WHERE donation_id = $(donationId);`,
+      { donationId },
+    );
+    donation[0].furniture = furnitureRes;
     res.status(200).json(keysToCamel(donation));
   } catch (err) {
     res.status(500).send(err.message);
@@ -32,9 +87,6 @@ router.get('/:donationId', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const {
-      routeId,
-      orderNum,
-      status,
       addressStreet,
       addressUnit,
       addressCity,
@@ -44,22 +96,21 @@ router.post('/', async (req, res) => {
       email,
       phoneNum,
       notes,
-      date,
+      furniture,
+      pictures,
     } = req.body;
     const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 6);
     const id = nanoid();
+    const status = 'pending';
+    const submittedDate = new Date();
     const donation = await db.query(
       `INSERT INTO donations (
-        id,
-        ${routeId ? 'route_id, ' : ''}
-        ${orderNum ? 'order_num, ' : ''}
         address_street,
         ${addressUnit ? 'address_unit, ' : ''}
         address_city, address_zip, first_name,
         last_name, email, phone_num,
         ${notes ? 'notes, ' : ''}
-        ${date ? 'date, ' : ''}
-        status
+        submitted_date, last_edited_date, status
         )
       VALUES (
         $(id),
@@ -70,8 +121,7 @@ router.post('/', async (req, res) => {
         $(addressCity), $(addressZip), $(firstName),
         $(lastName), $(email), $(phoneNum),
         ${notes ? '$(notes), ' : ''}
-        ${date ? '$(date), ' : ''}
-        $(status)
+        $(submittedDate), $(submittedDate), $(status)
       )
       RETURNING *;`,
       {
@@ -88,9 +138,47 @@ router.post('/', async (req, res) => {
         email,
         phoneNum,
         notes,
-        date,
+        submittedDate,
       },
     );
+
+    const paddedPics = pictures.map(({ notes: note, imageUrl }) => ({
+      notes: note ?? '',
+      imageUrl,
+    }));
+    const notesArray = paddedPics.map(({ notes: note }) => note);
+    const urlArray = paddedPics.map(({ imageUrl: url }) => url);
+    const donationId = donation[0].id;
+
+    const picturesRes = await db.query(
+      `INSERT INTO pictures(donation_id, image_url, notes) 
+      SELECT $(donationId) donation_id, notes, imageURL FROM
+          unnest(
+            $(notesArray),
+            $(urlArray)
+          ) AS data(notes, imageURL)
+        RETURNING *;`,
+      { donationId, notesArray, urlArray },
+    );
+
+    const nameArray = furniture.map(({ name }) => name);
+    const countArray = furniture.map(({ count }) => count);
+
+    const furnitureRes = await db.query(
+      `INSERT INTO furniture(donation_id, name, count) 
+      SELECT $(donationId) donation_id, name, count
+      FROM
+          unnest(
+            $(nameArray),
+            $(countArray)
+          ) AS data(name, count)
+      RETURNING *;`,
+      { donationId, nameArray, countArray },
+    );
+
+    donation[0].pictures = picturesRes;
+    donation[0].furniture = furnitureRes;
+
     res.status(200).send(keysToCamel(donation));
   } catch (err) {
     res.status(500).send(err.message);
@@ -131,8 +219,8 @@ router.put('/:donationId', async (req, res) => {
       email,
       phoneNum,
       notes,
-      date,
     } = req.body;
+    const currDate = new Date();
     const donation = await db.query(
       `UPDATE donations
       SET
@@ -148,8 +236,7 @@ router.put('/:donationId', async (req, res) => {
         ${email ? 'email = $(email), ' : ''}
         ${phoneNum ? 'phone_num = $(phoneNum), ' : ''}
         ${notes ? 'notes = $(notes), ' : ''}
-        ${date ? 'date = $(date), ' : ''}
-        id = $(donationId)
+        last_edited_date = $(currDate)
       WHERE id = $(donationId)
       RETURNING *;`,
       {
@@ -166,7 +253,7 @@ router.put('/:donationId', async (req, res) => {
         email,
         phoneNum,
         notes,
-        date,
+        currDate,
       },
     );
     res.status(200).send(keysToCamel(donation));

@@ -11,14 +11,23 @@ const routes = require('./routes/routes');
 const donations = require('./routes/donations');
 const s3UploadRouter = require('./routes/s3upload');
 const nodemailer = require('./routes/nodeMailer');
+const pictures = require('./routes/pictures');
+const furniture = require('./routes/furniture');
 
 const app = express();
 
-const PORT = process.env.PORT || 3001;
+const PORT =
+  !process.env.NODE_ENV || process.env.NODE_ENV === 'development'
+    ? 3001
+    : process.env.REACT_APP_PROD_PORT;
 
 app.use(
   cors({
-    origin: `${process.env.REACT_APP_HOST}:${process.env.REACT_APP_PORT}`,
+    origin: `${
+      !process.env.NODE_ENV || process.env.NODE_ENV === 'development'
+        ? process.env.REACT_APP_HOST
+        : process.env.REACT_APP_PROD_HOST
+    }`,
     credentials: true,
   }),
 );
@@ -32,6 +41,8 @@ app.use('/routes', routes);
 app.use('/donations', donations);
 app.use('/s3Upload', s3UploadRouter);
 app.use('/nodemailer', nodemailer);
+app.use('/pictures', pictures);
+app.use('/furniture', furniture);
 
 app.listen(PORT, () => {
   console.log(`Server listening on ${PORT}`);

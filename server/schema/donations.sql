@@ -1,11 +1,11 @@
-DROP TYPE status;
-DROP TABLE donations;
+DROP TYPE IF EXISTS status;
+DROP TABLE IF EXISTS donations;
 
-CREATE TYPE status AS ENUM ('pending', 'approved', 'denied', 'flagged', 'scheduling', 'scheduled', 'picked up', 'failed');
+CREATE TYPE status AS ENUM ('pending', 'approved', 'changes requested', 'scheduling', 'scheduled', 'archived');
 
 CREATE TABLE donations (
    id VARCHAR(6) PRIMARY KEY,
-   route_id INT,
+   route_id INT REFERENCES routes(id) ON DELETE SET NULL,
    order_num INT,
    status status NOT NULL,
    address_street VARCHAR(256) NOT NULL,
@@ -17,5 +17,6 @@ CREATE TABLE donations (
    email VARCHAR(256) NOT NULL,
    phone_num VARCHAR(15) NOT NULL,
    notes VARCHAR(256),
-   date date
+   submitted_date date NOT NULL,
+   last_edited_date date NOT NULL
 );

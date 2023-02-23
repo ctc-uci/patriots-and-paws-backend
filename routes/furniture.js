@@ -1,6 +1,6 @@
-import { keysToCamel } from '../common/utils';
-
 const express = require('express');
+
+const { keysToCamel } = require('../common/utils');
 const { db } = require('../server/db');
 
 const router = express.Router();
@@ -16,22 +16,16 @@ router.get('/', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { id, donationId, name, description, notes } = req.body;
+    const { donationId, name } = req.body;
     const furniture = await db.query(
-      `INSERT INTO furniture (id, donationId, name,
-            ${description ? ', description' : ''}
-            ${notes ? ', notes' : ''})
+      `INSERT INTO furniture ( donation_id, name)
         VALUES (
-            $(id), $(donationId), $(name),
-            ${description ? '$(description) ' : ''}
-            ${notes ? '$(notes) ' : ''})
+          $(donationId), $(name)
+          )
         RETURNING *;`,
       {
-        id,
         donationId,
         name,
-        description,
-        notes,
       },
     );
     res.status(200).json(keysToCamel(furniture));
@@ -43,23 +37,18 @@ router.post('/', async (req, res) => {
 router.put('/:furnitureId', async (req, res) => {
   try {
     const { furnitureId } = req.params;
-    const { id, donationId, name, description, notes } = req.body;
+    const { donationId, name } = req.body;
     const updatedFurniture = await db.query(
       `UPDATE furniture
          SET
-            id = $(id),
-            donationId = $(donationId),
-            name = $(name)
-            ${description ? ', description = $(description)' : ''}
-            ${notes ? ', notes = $(notes)' : ''}
+            ${donationId ? 'donation_id = $(donationId), ' : ''}
+            ${name ? 'name = $(name),' : ''}
+            id = $(furnitureId)
         WHERE id = $(furnitureId)
         RETURNING *`,
       {
-        id,
         donationId,
         name,
-        description,
-        notes,
         furnitureId,
       },
     );
