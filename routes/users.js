@@ -27,8 +27,8 @@ usersRouter.get('/', async (req, res) => {
   try {
     const allUsers = await db.query(
       `SELECT * FROM users
-       ORDER BY id
-       LIMIT ${numUsers}
+       ${numUsers ? `ORDER BY id` : ''}
+       ${numUsers ? `LIMIT ${numUsers}` : ''}
        ${pageNum ? `OFFSET ${(pageNum - 1) * numUsers}` : ''};`,
       { numUsers, pageNum },
     );

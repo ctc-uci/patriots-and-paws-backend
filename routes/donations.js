@@ -34,8 +34,8 @@ router.get('/', async (req, res) => {
         FROM routes
       ) AS relation3
     ON relation3.route_id = d.route_id
-    GROUP BY id
-    LIMIT ${numDonations}
+    ${numDonations ? `ORDER BY id` : ''}
+    ${numDonations ? `LIMIT ${numDonations}` : ''}
     ${pageNum ? `OFFSET ${(pageNum - 1) * numDonations}` : ''}
     ;`,
       { numDonations, pageNum },
