@@ -7,7 +7,7 @@ const router = express.Router();
 
 // get all donation rows
 router.get('/', async (req, res) => {
-  const { numDonations, pageNum } = req.body;
+  const { numDonations, pageNum } = req.query;
   try {
     const allDonations = await db.query(
       `SELECT
@@ -43,6 +43,15 @@ router.get('/', async (req, res) => {
     );
 
     res.status(200).json(keysToCamel(allDonations));
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+});
+
+router.get('/total', async (req, res) => {
+  try {
+    const totalDonations = await db.query(`SELECT COUNT(DISTINCT id) FROM donations;`);
+    res.status(200).json(keysToCamel(totalDonations));
   } catch (err) {
     res.status(500).send(err.message);
   }

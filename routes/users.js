@@ -38,6 +38,15 @@ usersRouter.get('/', async (req, res) => {
   }
 });
 
+usersRouter.get('/total', async (req, res) => {
+  try {
+    const totalUsers = await db.query(`SELECT COUNT(DISTINCT id) FROM users;`);
+    res.status(200).json(keysToCamel(totalUsers));
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+});
+
 usersRouter.get('/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
