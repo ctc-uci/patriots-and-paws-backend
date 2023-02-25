@@ -19,7 +19,7 @@ const furniture = require('./routes/furniture');
 const { deleteRoutes, deletePictures, testFunction } = require('./nodeScheduler');
 
 // TODO: delete test code later
-schedule.scheduleJob('*/30 * * * * *', testFunction);
+schedule.scheduleJob('*/10 * * * * *', testFunction);
 // delete routes at 12 AM on the 1st and 15th of every month
 schedule.scheduleJob('0 0 1,15 * *', deleteRoutes);
 

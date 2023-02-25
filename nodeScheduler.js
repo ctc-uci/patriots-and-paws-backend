@@ -16,12 +16,12 @@ const DeleteS3Object = async (imageUrl) => {
     const params = {
       Bucket: process.env.S3_BUCKET_NAME,
       Key: imageName,
-      Expires: 60,
     };
-    await s3.deleteObject(params);
+    console.log('Deleted image: ', imageName);
+    await s3.deleteObject(params).promise();
     console.log('Deleted: ', params);
   } catch (error) {
-    console.log('Error deleting s3 object');
+    console.log('Error deleting s3 object: ', error);
   }
 };
 
