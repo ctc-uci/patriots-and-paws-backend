@@ -27,11 +27,18 @@ schedule.scheduleJob('0 0 1 * *', deletePictures);
 
 const app = express();
 
-const PORT = process.env.PORT || 3001;
+const PORT =
+  !process.env.NODE_ENV || process.env.NODE_ENV === 'development'
+    ? 3001
+    : process.env.REACT_APP_PROD_PORT;
 
 app.use(
   cors({
-    origin: `${process.env.REACT_APP_HOST}:${process.env.REACT_APP_PORT}`,
+    origin: `${
+      !process.env.NODE_ENV || process.env.NODE_ENV === 'development'
+        ? process.env.REACT_APP_HOST
+        : process.env.REACT_APP_PROD_HOST
+    }`,
     credentials: true,
   }),
 );
