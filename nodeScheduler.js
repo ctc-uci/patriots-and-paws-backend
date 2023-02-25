@@ -17,11 +17,9 @@ const DeleteS3Object = async (imageUrl) => {
       Bucket: process.env.S3_BUCKET_NAME,
       Key: imageName,
     };
-    console.log('Deleted image: ', imageName);
     await s3.deleteObject(params).promise();
-    console.log('Deleted: ', params);
   } catch (error) {
-    console.log('Error deleting s3 object: ', error);
+    // console.log('Error deleting s3 object: ', error);
   }
 };
 
@@ -31,46 +29,26 @@ const deleteRoutes = async () => {
       `DELETE FROM routes WHERE (date < CURRENT_DATE - 15) AND (id IN (SELECT route_id FROM donations WHERE status = 'archived'))`,
     );
   } catch (err) {
-    console.error('Error deleting routes: ', err);
+    // console.error('Error deleting routes: ', err);
   }
 };
 
 const deletePictures = async () => {
   try {
-    await db
-      .query(
-        `SELECT image_url FROM pictures WHERE ( donation_id IN (SELECT id FROM donations WHERE status = 'archived' AND last_edited_date < CURRENT_DATE - 30))`,
-      )
-      .forEach((picture) => {
-        // delete corresponding s3 object
-        DeleteS3Object(picture.image_url);
-      });
-    // deletes the pictures
+    const pictures = await db.query(
+      `SELECT image_url FROM pictures WHERE ( donation_id IN (SELECT id FROM donations WHERE status = 'archived' AND last_edited_date < CURRENT_DATE - 30))`,
+    );
+    pictures.forEach((picture) => {
+      // delete corresponding s3 object
+      DeleteS3Object(picture.image_url);
+    });
+    // deletes the pictures from PNP database
     await db.query(
       `DELETE FROM pictures WHERE ( donation_id IN (SELECT id FROM donations WHERE status = 'archived' AND last_edited_date < CURRENT_DATE - 30))`,
     );
   } catch (err) {
-    console.error('Error deleting pictures: ', err);
+    // console.error('Error deleting pictures: ', err);
   }
 };
 
-// TODO: delete test code later
-const testFunction = async () => {
-  try {
-    const test = await db.query(
-      `SELECT image_url FROM pictures WHERE ( donation_id IN (SELECT id FROM donations WHERE status = 'archived' AND last_edited_date < CURRENT_DATE - 30))`,
-    );
-    test.forEach((picture) => {
-      // delete corresponding s3 object
-      DeleteS3Object(picture.image_url);
-    });
-    // deletes the pictures
-    // await db.query(
-    //   `DELETE FROM pictures WHERE ( donation_id IN (SELECT id FROM donations WHERE status = 'archived' AND last_edited_date < CURRENT_DATE - 30))`,
-    // );
-  } catch (err) {
-    console.error('Error deleting pictures: ', err);
-  }
-};
-
-module.exports = { deleteRoutes, testFunction, deletePictures };
+module.exports = { deleteRoutes, deletePictures };
