@@ -3,10 +3,10 @@ const { customAlphabet } = require('nanoid');
 const { keysToCamel } = require('../common/utils');
 const { db } = require('../server/db');
 
-const router = express.Router();
+const donationsRouter = express.Router();
 
 // get all donation rows
-router.get('/', async (req, res) => {
+donationsRouter.get('/', async (req, res) => {
   try {
     const allDonations = await db.query(
       `SELECT
@@ -43,7 +43,7 @@ router.get('/', async (req, res) => {
 });
 
 // get specific donation
-router.get('/:donationId', async (req, res) => {
+donationsRouter.get('/:donationId', async (req, res) => {
   try {
     const { donationId } = req.params;
     const donation = await db.query(
@@ -84,7 +84,7 @@ router.get('/:donationId', async (req, res) => {
 });
 
 // create new donation
-router.post('/', async (req, res) => {
+donationsRouter.post('/', async (req, res) => {
   try {
     const {
       addressStreet,
@@ -146,7 +146,7 @@ router.post('/', async (req, res) => {
     const donationId = donation[0].id;
 
     const picturesRes = await db.query(
-      `INSERT INTO pictures(donation_id, image_url, notes) 
+      `INSERT INTO pictures(donation_id, image_url, notes)
       SELECT $(donationId) donation_id, notes, imageURL FROM
           unnest(
             $(notesArray),
@@ -160,7 +160,7 @@ router.post('/', async (req, res) => {
     const countArray = furniture.map(({ count }) => count);
 
     const furnitureRes = await db.query(
-      `INSERT INTO furniture(donation_id, name, count) 
+      `INSERT INTO furniture(donation_id, name, count)
       SELECT $(donationId) donation_id, name, count
       FROM
           unnest(
@@ -180,7 +180,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.post('/verify', async (req, res) => {
+donationsRouter.post('/verify', async (req, res) => {
   try {
     const { email, donationId } = req.body;
     const donation = await db.query(`SELECT email FROM donations WHERE id = $(donationId);`, {
@@ -198,7 +198,7 @@ router.post('/verify', async (req, res) => {
 });
 
 // update info for a specific donation
-router.put('/:donationId', async (req, res) => {
+donationsRouter.put('/:donationId', async (req, res) => {
   try {
     const { donationId } = req.params;
     const {
@@ -258,7 +258,7 @@ router.put('/:donationId', async (req, res) => {
 });
 
 // delete specified donation
-router.delete('/:donationId', async (req, res) => {
+donationsRouter.delete('/:donationId', async (req, res) => {
   try {
     const { donationId } = req.params;
     const deletedDonation = await db.query(
@@ -271,4 +271,4 @@ router.delete('/:donationId', async (req, res) => {
   }
 });
 
-module.exports = router;
+module.exports = donationsRouter;

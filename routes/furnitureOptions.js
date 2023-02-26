@@ -45,10 +45,11 @@ furnitureOptionsRouter.post('/', async (req, res) => {
         options,
       },
     );
+
     const deletedOptions = await db.query(
       `
       DELETE FROM furniture_options
-      WHERE name IN $(deleted:csv)
+      WHERE name = ANY(ARRAY($(deleted)))
       RETURNING *;
       `,
       {
