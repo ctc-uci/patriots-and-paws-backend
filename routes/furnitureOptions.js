@@ -32,7 +32,6 @@ nameArray = furniture.map { name:  } => name
 furnitureOptionsRouter.post('/', async (req, res) => {
   try {
     const { options, deleted } = req.body;
-    console.log(deleted);
 
     const furnitureOptions = await db.query(
       `INSERT INTO furniture_options(name, accepted)
@@ -49,11 +48,11 @@ furnitureOptionsRouter.post('/', async (req, res) => {
     const deletedOptions = await db.query(
       `
       DELETE FROM furniture_options
-      WHERE name = ANY(ARRAY($(deleted)))
+      WHERE name = ANY(string_to_array($(deleted),','))
       RETURNING *;
       `,
       {
-        deleted,
+        deleted: deleted.toString(),
       },
     );
 
@@ -68,8 +67,8 @@ furnitureOptionsRouter.delete('/:name', async (req, res) => {
     const { name } = req.params;
     const deletedFurniture = await db.query(
       `DELETE FROM furniture_options
-            WHERE name = $(name)
-            RETURNING *`,
+          WHERE name = $(name)
+          RETURNING *`,
       {
         name,
       },
