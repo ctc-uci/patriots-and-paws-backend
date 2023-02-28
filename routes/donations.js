@@ -1,5 +1,6 @@
 const express = require('express');
 const { keysToCamel, donationsQuery } = require('../common/utils');
+const { customAlphabet } = require('nanoid');
 const { db } = require('../server/db');
 
 const router = express.Router();
@@ -75,11 +76,13 @@ router.post('/', async (req, res) => {
       furniture,
       pictures,
     } = req.body;
+    const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 6);
+    const id = nanoid();
     const status = 'pending';
     const submittedDate = new Date();
     const donation = await db.query(
       `INSERT INTO donations (
-        address_street,
+        id, address_street,
         ${addressUnit ? 'address_unit, ' : ''}
         address_city, address_zip, first_name,
         last_name, email, phone_num,
@@ -87,7 +90,7 @@ router.post('/', async (req, res) => {
         submitted_date, last_edited_date, status
         )
       VALUES (
-        $(addressStreet),
+        $(id), $(addressStreet),
         ${addressUnit ? '$(addressUnit), ' : ''}
         $(addressCity), $(addressZip), $(firstName),
         $(lastName), $(email), $(phoneNum),
@@ -96,6 +99,7 @@ router.post('/', async (req, res) => {
       )
       RETURNING *;`,
       {
+        id,
         status,
         addressStreet,
         addressUnit,
@@ -136,6 +140,23 @@ router.post('/', async (req, res) => {
     donation[0].furniture = furnitureRes;
 
     res.status(200).send(keysToCamel(donation));
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+});
+
+router.post('/verify', async (req, res) => {
+  try {
+    const { email, donationId } = req.body;
+    const donation = await db.query(`SELECT email FROM donations WHERE id = $(donationId);`, {
+      donationId,
+    });
+
+    if (donation.length !== 0 && donation[0].email === email) {
+      res.status(200).send(true);
+    } else {
+      res.status(200).send(false);
+    }
   } catch (err) {
     res.status(500).send(err.message);
   }
