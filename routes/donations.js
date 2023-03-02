@@ -1,6 +1,6 @@
 const express = require('express');
-const { keysToCamel, donationsQuery } = require('../common/utils');
 const { customAlphabet } = require('nanoid');
+const { keysToCamel, donationsQuery } = require('../common/utils');
 const { db } = require('../server/db');
 
 const router = express.Router();
@@ -199,6 +199,26 @@ router.post('/verify', async (req, res) => {
     } else {
       res.status(200).send(false);
     }
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+});
+
+router.post('/assign-route', async (req, res) => {
+  try {
+    const { donationId, routeId } = req.body;
+    const donation = await db.query(
+      `UPDATE donations
+      SET order_num = (SELECT COUNT(*) FROM donations WHERE route_id = ${routeId}) + 1,
+        route_id = ${routeId}
+      where id = ${donationId}
+      returning *;`,
+      {
+        donationId,
+        routeId,
+      },
+    );
+    res.status(200).send(keysToCamel(donation));
   } catch (err) {
     res.status(500).send(err.message);
   }
