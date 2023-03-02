@@ -35,7 +35,8 @@ routesRouter.get('/', async (req, res) => {
             'order_num', dd.order_num, 'status', dd.status,
             'address_street', dd.address_street, 'address_city', dd.address_city,
             'address_unit', dd.address_unit, 'address_zip', dd.address_zip,
-            'notes', dd.notes, 'submitted_date', dd.submitted_date,
+            'first_name', dd.first_name, 'last_name', dd.last_name, 'email', dd.email,
+            'phone_num', dd.phone_num, 'notes', dd.notes, 'submitted_date', dd.submitted_date,
             'pickup_date', dd.pickup_date, 'furniture', dd.furniture,
             'pictures', dd.pictures)) as donations
         FROM (${donationsQuery}) as dd
@@ -68,7 +69,8 @@ routesRouter.get('/driver/:driverId', async (req, res) => {
             'order_num', dd.order_num, 'status', dd.status,
             'address_street', dd.address_street, 'address_city', dd.address_city,
             'address_unit', dd.address_unit, 'address_zip', dd.address_zip,
-            'notes', dd.notes, 'submitted_date', dd.submitted_date,
+            'first_name', dd.first_name, 'last_name', dd.last_name, 'email', dd.email,
+            'phone_num', dd.phone_num, 'notes', dd.notes, 'submitted_date', dd.submitted_date,
             'pickup_date', dd.pickup_date, 'furniture', dd.furniture,
             'pictures', dd.pictures)) as donations
         FROM (SELECT
@@ -131,7 +133,8 @@ routesRouter.get('/:routeId', async (req, res) => {
             'order_num', dd.order_num, 'status', dd.status,
             'address_street', dd.address_street, 'address_city', dd.address_city,
             'address_unit', dd.address_unit, 'address_zip', dd.address_zip,
-            'notes', dd.notes, 'submitted_date', dd.submitted_date,
+            'first_name', dd.first_name, 'last_name', dd.last_name, 'email', dd.email,
+            'phone_num', dd.phone_num, 'notes', dd.notes, 'submitted_date', dd.submitted_date,
             'pickup_date', dd.pickup_date, 'furniture', dd.furniture,
             'pictures', dd.pictures)) as donations
         FROM (SELECT
