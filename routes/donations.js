@@ -1,16 +1,57 @@
 const express = require('express');
 const { customAlphabet } = require('nanoid');
-const { keysToCamel, donationsQuery } = require('../common/utils');
+const { keysToCamel } = require('../common/utils');
 const { db } = require('../server/db');
 
 const router = express.Router();
 
 // get all donation rows
 router.get('/', async (req, res) => {
+  const { numDonations, pageNum } = req.query;
   try {
-    const allDonations = await db.query(`${donationsQuery};`);
+    const allDonations = await db.query(
+      `SELECT
+      d.id, d.route_id, d.order_num, d.status,
+      d.address_street, d.address_city, d.address_unit,
+      d.address_zip, d.first_name, d.last_name, d.email,
+      d.phone_num, d.notes, d.submitted_date, relation3.pickup_date,
+      COALESCE(relation1.furniture, '{}') AS furniture,
+      COALESCE(relation2.pictures, '{}') AS pictures
+      FROM donations AS d
+      LEFT JOIN (SELECT f.donation_id,
+            array_agg(json_build_object('id', f.id, 'name', f.name, 'count', f.count)) AS furniture
+            FROM furniture AS f
+            GROUP BY f.donation_id
+          ) AS relation1
+      ON relation1.donation_id = d.id
+      LEFT JOIN (SELECT pics.donation_id,
+            array_agg(json_build_object('id', pics.id, 'image_url', pics.image_url, 'notes', pics.notes)) AS pictures
+            FROM pictures AS pics
+            GROUP BY pics.donation_id
+          ) AS relation2
+      ON relation2.donation_id = d.id
+      LEFT JOIN (
+        SELECT id AS route_id, date as pickup_date
+        FROM routes
+      ) AS relation3
+      ON relation3.route_id = d.route_id
+    ${numDonations ? `ORDER BY id` : ''}
+    ${numDonations ? `LIMIT ${numDonations}` : ''}
+    ${pageNum ? `OFFSET ${(pageNum - 1) * numDonations}` : ''}
+    ;`,
+      { numDonations, pageNum },
+    );
 
     res.status(200).json(keysToCamel(allDonations));
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+});
+
+router.get('/total', async (req, res) => {
+  try {
+    const totalDonations = await db.query(`SELECT COUNT(DISTINCT id) FROM donations;`);
+    res.status(200).json(keysToCamel(totalDonations));
   } catch (err) {
     res.status(500).send(err.message);
   }

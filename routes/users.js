@@ -46,7 +46,7 @@ usersRouter.put('/:userId', async (req, res) => {
     const { userId } = req.params;
     const { role, firstName, lastName, phoneNumber, email, newPassword } = req.body;
     const updatedUser = await db.query(
-      `UPDATE users SET 
+      `UPDATE users SET
     ${role ? 'role = $(role), ' : ''}
     ${firstName ? 'first_name = $(firstName), ' : ''}
     ${lastName ? 'last_name = $(lastName), ' : ''}
