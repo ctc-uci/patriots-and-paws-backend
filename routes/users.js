@@ -23,25 +23,9 @@ usersRouter.post('/', async (req, res) => {
 });
 
 usersRouter.get('/', async (req, res) => {
-  const { numUsers, pageNum } = req.body;
   try {
-    const allUsers = await db.query(
-      `SELECT * FROM users
-       ${numUsers ? `ORDER BY id` : ''}
-       ${numUsers ? `LIMIT ${numUsers}` : ''}
-       ${pageNum ? `OFFSET ${(pageNum - 1) * numUsers}` : ''};`,
-      { numUsers, pageNum },
-    );
+    const allUsers = await db.query(`SELECT * FROM users;`);
     res.status(200).json(keysToCamel(allUsers));
-  } catch (err) {
-    res.status(500).send(err.message);
-  }
-});
-
-usersRouter.get('/total', async (req, res) => {
-  try {
-    const totalUsers = await db.query(`SELECT COUNT(DISTINCT id) FROM users;`);
-    res.status(200).json(keysToCamel(totalUsers));
   } catch (err) {
     res.status(500).send(err.message);
   }
