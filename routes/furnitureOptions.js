@@ -13,22 +13,6 @@ furnitureOptionsRouter.get('/', async (req, res) => {
   }
 });
 
-/*
-req.body = {
-  ...,
-  furniture: [{furniture obj 1}, ...]
-}
-
-furniture = [
-  {
-    name: chair,
-    accepted: false
-  },
-  ...
-]
-nameArray = furniture.map { name:  } => name
-*/
-
 furnitureOptionsRouter.post('/', async (req, res) => {
   try {
     const { options, deleted } = req.body;
