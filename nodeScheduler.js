@@ -26,7 +26,7 @@ const DeleteS3Object = async (imageUrl) => {
 const deleteRoutes = async () => {
   try {
     await db.query(
-      `DELETE FROM routes WHERE (date < CURRENT_DATE - 15) AND (id IN (SELECT route_id FROM donations WHERE status = 'archived'))`,
+      `DELETE FROM routes AS r WHERE (r.date < CURRENT_DATE - 15) AND NOT EXISTS (SELECT * FROM donations AS d WHERE d.route_id = r.id AND d.status != 'archived')`,
     );
   } catch (err) {
     // console.error('Error deleting routes: ', err);
