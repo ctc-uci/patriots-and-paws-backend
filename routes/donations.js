@@ -3,10 +3,10 @@ const { customAlphabet } = require('nanoid');
 const { keysToCamel } = require('../common/utils');
 const { db } = require('../server/db');
 
-const router = express.Router();
+const donationsRouter = express.Router();
 
 // get all donation rows
-router.get('/', async (req, res) => {
+donationsRouter.get('/', async (req, res) => {
   const { numDonations, pageNum } = req.query;
   try {
     const allDonations = await db.query(
@@ -58,7 +58,7 @@ router.get('/total', async (req, res) => {
 });
 
 // get specific donation
-router.get('/:donationId', async (req, res) => {
+donationsRouter.get('/:donationId', async (req, res) => {
   try {
     const { donationId } = req.params;
     const donation = await db.query(
@@ -102,7 +102,7 @@ router.get('/:donationId', async (req, res) => {
 });
 
 // create new donation
-router.post('/', async (req, res) => {
+donationsRouter.post('/', async (req, res) => {
   try {
     const {
       addressStreet,
@@ -186,7 +186,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.post('/verify', async (req, res) => {
+donationsRouter.post('/verify', async (req, res) => {
   try {
     const { email, donationId } = req.body;
     const donation = await db.query(`SELECT email FROM donations WHERE id = $(donationId);`, {
@@ -224,7 +224,7 @@ router.post('/assign-route', async (req, res) => {
 });
 
 // update info for a specific donation
-router.put('/:donationId', async (req, res) => {
+donationsRouter.put('/:donationId', async (req, res) => {
   // add update furniture & pictures (can do this in multiple queries, not super inefficient as we won't be updating more than a certain number of rows at a time)
   try {
     const { donationId } = req.params;
@@ -285,7 +285,7 @@ router.put('/:donationId', async (req, res) => {
 });
 
 // delete specified donation
-router.delete('/:donationId', async (req, res) => {
+donationsRouter.delete('/:donationId', async (req, res) => {
   try {
     const { donationId } = req.params;
     const deletedDonation = await db.query(
@@ -298,4 +298,4 @@ router.delete('/:donationId', async (req, res) => {
   }
 });
 
-module.exports = router;
+module.exports = donationsRouter;

@@ -15,4 +15,4 @@ const cn = `postgres://${process.env.AWS_USER}:${encodeURIComponent(process.env.
 }:${process.env.AWS_PORT}/${process.env.AWS_DB_NAME}`; // For pgp
 const db = pgp(cn);
 
-module.exports = { pool, db };
+module.exports = { pool, db, pgp };
