@@ -16,7 +16,7 @@ router.get('/', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { donationId, imageUrl, notes } = req.body;
+    const { donationId, imageURL, notes } = req.body;
     const pictures = await db.query(
       `INSERT INTO pictures (
         donation_id, ${notes ? 'notes, ' : ''} image_url
@@ -28,7 +28,7 @@ router.post('/', async (req, res) => {
       {
         donationId,
         notes,
-        imageUrl,
+        imageURL,
       },
     );
     res.status(200).json(keysToCamel(pictures));

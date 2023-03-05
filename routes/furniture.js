@@ -51,6 +51,7 @@ router.put('/:furnitureId', async (req, res) => {
       {
         donationId,
         name,
+        count,
         furnitureId,
         count,
       },

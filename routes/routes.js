@@ -1,5 +1,5 @@
 const express = require('express');
-const { keysToCamel } = require('../common/utils');
+const { keysToCamel, donationsQuery } = require('../common/utils');
 
 const routesRouter = express.Router();
 const { db } = require('../server/db');
@@ -24,10 +24,24 @@ routesRouter.get('/', async (req, res) => {
   try {
     const allRoutes = await db.query(
       `SELECT
-        routes.id, routes.driver_id, routes.name, routes.date,
+        routes.id, routes.driver_id, routes.name,
+        routes.date, route_donations.donations,
         users.role, users.first_name, users.last_name,
         users.phone_number, users.email
       FROM routes
+      LEFT JOIN (SELECT
+          dd.route_id,
+          array_agg(json_build_object('id', dd.id, 'route_id', dd.route_id,
+            'order_num', dd.order_num, 'status', dd.status,
+            'address_street', dd.address_street, 'address_city', dd.address_city,
+            'address_unit', dd.address_unit, 'address_zip', dd.address_zip,
+            'first_name', dd.first_name, 'last_name', dd.last_name, 'email', dd.email,
+            'phone_num', dd.phone_num, 'notes', dd.notes, 'submitted_date', dd.submitted_date,
+            'pickup_date', dd.pickup_date, 'furniture', dd.furniture,
+            'pictures', dd.pictures)) as donations
+        FROM (${donationsQuery}) as dd
+        GROUP BY dd.route_id) as route_donations
+      ON route_donations.route_id = routes.id
       LEFT JOIN users ON routes.driver_id = users.id;`,
     );
     res.status(200).json(keysToCamel(allRoutes));
@@ -39,9 +53,63 @@ routesRouter.get('/', async (req, res) => {
 routesRouter.get('/driver/:driverId', async (req, res) => {
   try {
     const { driverId } = req.params;
-    const driverRoutes = await db.query(`SELECT * FROM routes WHERE driver_id = $(driverId);`, {
-      driverId,
-    });
+    const driverRoutes = await db.query(
+      `
+      WITH routes(id, driver_id, name, date) AS
+        (SELECT * FROM routes WHERE driver_id = $(driverId))
+      SELECT
+        routes.id, routes.driver_id, routes.name,
+        routes.date, route_donations.donations,
+        users.role, users.first_name, users.last_name,
+        users.phone_number, users.email
+      FROM routes
+      LEFT JOIN (SELECT
+          dd.route_id,
+          array_agg(json_build_object('id', dd.id, 'route_id', dd.route_id,
+            'order_num', dd.order_num, 'status', dd.status,
+            'address_street', dd.address_street, 'address_city', dd.address_city,
+            'address_unit', dd.address_unit, 'address_zip', dd.address_zip,
+            'first_name', dd.first_name, 'last_name', dd.last_name, 'email', dd.email,
+            'phone_num', dd.phone_num, 'notes', dd.notes, 'submitted_date', dd.submitted_date,
+            'pickup_date', dd.pickup_date, 'furniture', dd.furniture,
+            'pictures', dd.pictures)) as donations
+        FROM (SELECT
+          d.id, d.route_id, d.order_num, d.status,
+          d.address_street, d.address_city, d.address_unit,
+          d.address_zip, d.first_name, d.last_name, d.email,
+          d.phone_num, d.notes, d.submitted_date, relation3.pickup_date,
+          COALESCE(relation1.furniture, '{}') AS furniture,
+          COALESCE(relation2.pictures, '{}') AS pictures
+          FROM (SELECT * FROM donations
+            WHERE route_id IN
+            (SELECT id FROM routes WHERE driver_id = $(driverId))
+          ) AS d
+          LEFT JOIN (SELECT f.donation_id,
+              array_agg(json_build_object('id', f.id, 'name', f.name, 'count', f.count)) AS furniture
+            FROM furniture AS f
+            GROUP BY f.donation_id
+          ) AS relation1
+          ON relation1.donation_id = d.id
+          LEFT JOIN (SELECT pics.donation_id,
+              array_agg(json_build_object('id', pics.id, 'image_url', pics.image_url, 'notes', pics.notes)) AS pictures
+            FROM pictures AS pics
+            GROUP BY pics.donation_id
+          ) AS relation2
+          ON relation2.donation_id = d.id
+          LEFT JOIN (
+            SELECT id AS route_id, date as pickup_date
+            FROM routes
+          ) AS relation3
+          ON relation3.route_id = d.route_id
+          ORDER BY d.order_num) as dd
+        GROUP BY dd.route_id) as route_donations
+      ON route_donations.route_id = routes.id
+      LEFT JOIN users ON routes.driver_id = users.id
+      WHERE driver_id = $(driverId);`,
+      {
+        driverId,
+      },
+    );
     res.status(200).json(keysToCamel(driverRoutes));
   } catch (err) {
     res.status(500).send(err.message);
@@ -51,12 +119,55 @@ routesRouter.get('/driver/:driverId', async (req, res) => {
 routesRouter.get('/:routeId', async (req, res) => {
   try {
     const { routeId } = req.params;
-    const routeInfo = await db.query(`SELECT * FROM routes WHERE id = $(routeId);`, { routeId });
-
-    const donationRes = await db.query(`SELECT * FROM donations WHERE route_id = $(routeId);`, {
-      routeId,
-    });
-    routeInfo[0].donations = donationRes;
+    const routeInfo = await db.query(
+      `
+      SELECT
+        routes.id, routes.driver_id, routes.name,
+        routes.date, route_donations.donations,
+        users.role, users.first_name, users.last_name,
+        users.phone_number, users.email
+      FROM (SELECT * FROM routes WHERE id = $(routeId)) AS routes
+      LEFT JOIN (SELECT
+          dd.route_id,
+          array_agg(json_build_object('id', dd.id, 'route_id', dd.route_id,
+            'order_num', dd.order_num, 'status', dd.status,
+            'address_street', dd.address_street, 'address_city', dd.address_city,
+            'address_unit', dd.address_unit, 'address_zip', dd.address_zip,
+            'first_name', dd.first_name, 'last_name', dd.last_name, 'email', dd.email,
+            'phone_num', dd.phone_num, 'notes', dd.notes, 'submitted_date', dd.submitted_date,
+            'pickup_date', dd.pickup_date, 'furniture', dd.furniture,
+            'pictures', dd.pictures)) as donations
+        FROM (SELECT
+          d.id, d.route_id, d.order_num, d.status,
+          d.address_street, d.address_city, d.address_unit,
+          d.address_zip, d.first_name, d.last_name, d.email,
+          d.phone_num, d.notes, d.submitted_date, relation3.pickup_date,
+          COALESCE(relation1.furniture, '{}') AS furniture,
+          COALESCE(relation2.pictures, '{}') AS pictures
+          FROM (SELECT * FROM donations WHERE route_id = $(routeId)) AS d
+          LEFT JOIN (SELECT f.donation_id,
+              array_agg(json_build_object('id', f.id, 'name', f.name, 'count', f.count)) AS furniture
+            FROM furniture AS f
+            GROUP BY f.donation_id
+          ) AS relation1
+          ON relation1.donation_id = d.id
+          LEFT JOIN (SELECT pics.donation_id,
+              array_agg(json_build_object('id', pics.id, 'image_url', pics.image_url, 'notes', pics.notes)) AS pictures
+            FROM pictures AS pics
+            GROUP BY pics.donation_id
+          ) AS relation2
+          ON relation2.donation_id = d.id
+          LEFT JOIN (
+            SELECT id AS route_id, date as pickup_date
+            FROM routes
+          ) AS relation3
+          ON relation3.route_id = d.route_id
+          ORDER BY d.order_num) as dd
+        GROUP BY dd.route_id) as route_donations
+      ON route_donations.route_id = routes.id
+      LEFT JOIN users ON routes.driver_id = users.id;`,
+      { routeId },
+    );
 
     res.status(200).json(keysToCamel(routeInfo));
   } catch (err) {
@@ -84,6 +195,7 @@ routesRouter.put('/:routeId', async (req, res) => {
 });
 
 routesRouter.delete('/:routeId', async (req, res) => {
+  // double check if this recursively deletes in donations (or if it even allows you to delete without CASCADE keyword)
   try {
     const { routeId } = req.params;
     const deletedRoute = await db.query(`DELETE FROM routes WHERE id = $(routeId) RETURNING *;`, {
