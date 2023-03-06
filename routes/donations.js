@@ -48,7 +48,7 @@ donationsRouter.get('/', async (req, res) => {
   }
 });
 
-router.get('/total', async (req, res) => {
+donationsRouter.get('/total', async (req, res) => {
   try {
     const totalDonations = await db.query(`SELECT COUNT(DISTINCT id) FROM donations;`);
     res.status(200).json(keysToCamel(totalDonations));
@@ -203,7 +203,7 @@ donationsRouter.post('/verify', async (req, res) => {
   }
 });
 
-router.post('/assign-route', async (req, res) => {
+donationsRouter.post('/assign-route', async (req, res) => {
   try {
     const { donationId, routeId } = req.body;
     const donation = await db.query(
@@ -225,7 +225,7 @@ router.post('/assign-route', async (req, res) => {
 
 // update info for a specific donation
 donationsRouter.put('/:donationId', async (req, res) => {
-  // add update furniture & pictures (can do this in multiple queries, not super inefficient as we won't be updating more than a certain number of rows at a time)
+  // TODO: add update furniture & pictures (can do this in multiple queries, not super inefficient as we won't be updating more than a certain number of rows at a time)
   try {
     const { donationId } = req.params;
     const {
