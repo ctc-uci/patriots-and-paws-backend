@@ -23,8 +23,8 @@ jobs:
             #Now we have got the access of EC2 and we will start the deploy .
             cd ~/patriots-and-paws-backend &&
             git checkout dev &&
-            git pull origin dev &&
             git stash &&
+            git pull origin dev &&
             yarn &&
             pm2 restart app.js
           '
