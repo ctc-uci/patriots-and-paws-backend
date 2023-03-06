@@ -24,6 +24,7 @@ jobs:
             cd ~/patriots-and-paws-backend &&
             git checkout dev &&
             git pull origin dev &&
+            git stash &&
             yarn &&
             pm2 restart app.js
           '
