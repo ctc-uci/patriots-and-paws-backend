@@ -3,6 +3,8 @@ const { customAlphabet } = require('nanoid');
 const { keysToCamel } = require('../common/utils');
 const { db } = require('../server/db');
 
+// const { deleteS3Object } = require('../nodeScheduler');
+
 const donationsRouter = express.Router();
 
 // get all donation rows
@@ -292,6 +294,7 @@ donationsRouter.delete('/:donationId', async (req, res) => {
       `DELETE from donations WHERE id = $(donationId) RETURNING *;`,
       { donationId },
     );
+    // TODO - call deleteS3Object() on each image
     res.status(200).send(keysToCamel(deletedDonation));
   } catch (err) {
     res.status(500).send(err.message);
