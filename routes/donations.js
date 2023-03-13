@@ -159,10 +159,10 @@ donationsRouter.post('/', async (req, res) => {
 
     const picturesRes = await db.query(
       `INSERT INTO pictures(donation_id, image_url, notes)
-      SELECT $(donationId), "imageUrl", notes
+      SELECT $(donationId), image_url, notes
       FROM
           json_to_recordset($(pictures:json))
-      AS data("imageUrl" text, notes text)
+      AS data(image_url text, notes text)
       RETURNING *;`,
       { donationId, pictures },
     );
