@@ -2,6 +2,7 @@ const express = require('express');
 const { customAlphabet } = require('nanoid');
 const { keysToCamel } = require('../common/utils');
 const { db } = require('../server/db');
+const { DeleteS3Object } = require('../nodeScheduler');
 
 // const { deleteS3Object } = require('../nodeScheduler');
 
@@ -290,11 +291,15 @@ donationsRouter.put('/:donationId', async (req, res) => {
 donationsRouter.delete('/:donationId', async (req, res) => {
   try {
     const { donationId } = req.params;
+    const pictures = await db.query(
+      `SELECT image_url FROM pictures WHERE donation_id = $(donationId)`,
+      { donationId },
+    );
+    pictures.map((picture) => DeleteS3Object(picture.image_url));
     const deletedDonation = await db.query(
       `DELETE from donations WHERE id = $(donationId) RETURNING *;`,
       { donationId },
     );
-    // TODO - call deleteS3Object() on each image
     res.status(200).send(keysToCamel(deletedDonation));
   } catch (err) {
     res.status(500).send(err.message);

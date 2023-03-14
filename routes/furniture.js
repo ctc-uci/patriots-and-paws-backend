@@ -53,7 +53,6 @@ router.put('/:furnitureId', async (req, res) => {
         name,
         count,
         furnitureId,
-        count,
       },
     );
     res.status(200).json(keysToCamel(updatedFurniture));

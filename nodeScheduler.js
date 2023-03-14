@@ -51,4 +51,4 @@ const deletePictures = async () => {
   }
 };
 
-module.exports = { deleteRoutes, deletePictures };
+module.exports = { DeleteS3Object, deleteRoutes, deletePictures };
