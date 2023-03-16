@@ -1,6 +1,6 @@
 const express = require('express');
 const { customAlphabet } = require('nanoid');
-const { keysToCamel } = require('../common/utils');
+const { keysToCamel, diffArray } = require('../common/utils');
 const { db } = require('../server/db');
 
 const donationsRouter = express.Router();
@@ -281,6 +281,19 @@ donationsRouter.put('/:donationId', async (req, res) => {
       },
     );
 
+    const pictureIds = await db.query(`SELECT id FROM pictures WHERE donation_id=$(donationId)`, {
+      donationId,
+    });
+    const {
+      putArr: picturePut,
+      postArr: picturePost,
+      delArr: pictureDel,
+    } = diffArray(pictureIds, furniture);
+
+    console.log('PUT:', picturePut);
+    console.log('POST:', picturePost);
+    console.log('DELETE:', pictureDel);
+
     const picturesRes = await db.query(
       `INSERT INTO pictures(id, donation_id, image_url, notes)
       SELECT id, $(donationId), "imageUrl", notes
@@ -293,21 +306,61 @@ donationsRouter.put('/:donationId', async (req, res) => {
       { donationId, pictures },
     );
 
-    const furnitureRes = await db.query(
-      `INSERT INTO furniture(id, donation_id, name, count)
-      SELECT id, $(donationId), name, count
+    // diff furniture
+
+    const furnitureIds = await db.query(
+      `SELECT id FROM furniture WHERE donation_id=$(donationId)`,
+      {
+        donationId,
+      },
+    );
+    const {
+      putArr: furniturePut,
+      postArr: furniturePost,
+      delArr: furnitureDel,
+    } = diffArray(furnitureIds, furniture);
+
+    // console.log('PUT:', furniturePut);
+    // console.log('POST:', furniturePost);
+    // console.log('DELETE:', furnitureDel);
+
+    const furniturePostRes = await db.query(
+      `INSERT INTO furniture(donation_id, name, count)
+      SELECT $(donationId), name, count
       FROM
-          json_to_recordset($(furniture:json))
-      AS data(id integer, name text, count integer)
-      ON CONFLICT (id) DO UPDATE
-      SET name = excluded.name,
-          count = excluded.count
+          json_to_recordset($(furniturePost:json))
+      AS data(name text, count integer)
       RETURNING *;`,
-      { donationId, furniture },
+      { donationId, furniturePost },
     );
 
+    const furniturePutRes = await db.query(
+      `UPDATE furniture
+         SET
+            count = data.count
+        FROM
+            json_to_recordset($(furniturePut:json))
+        AS data(id integer, name text, count integer)
+        WHERE furniture.id = data.id
+        RETURNING *`,
+      { donationId, furniturePut },
+    );
+
+    const furnitureDeleteRes = await db.query(
+      `DELETE FROM furniture
+        WHERE id in (
+            SELECT id
+            FROM
+                json_to_recordset($(furnitureDel:json))
+            AS data(id integer)
+        )
+        RETURNING *`,
+      { donationId, furnitureDel },
+    );
+    console.log(furnitureDeleteRes);
+
     donation[0].pictures = picturesRes;
-    donation[0].furniture = furnitureRes;
+    donation[0].furniture = [...furniturePostRes, ...furniturePutRes];
 
     res.status(200).send(keysToCamel(donation));
   } catch (err) {
