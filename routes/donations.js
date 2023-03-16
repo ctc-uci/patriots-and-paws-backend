@@ -283,23 +283,22 @@ donationsRouter.put('/:donationId', async (req, res) => {
 
     const picturesRes = await db.query(
       `INSERT INTO pictures(id, donation_id, image_url, notes)
-      SELECT $(donationId), "imageUrl", notes
+      SELECT id, $(donationId), "imageUrl", notes
       FROM
           json_to_recordset($(pictures:json))
-      AS data("imageUrl" text, notes text)
+      AS data(id integer, "imageUrl" text, notes text)
       ON CONFLICT (id) DO UPDATE
-      SET image_url = excluded.image_url,
-          notes = excluded.notes
+      SET notes = excluded.notes
       RETURNING *;`,
       { donationId, pictures },
     );
 
     const furnitureRes = await db.query(
       `INSERT INTO furniture(id, donation_id, name, count)
-      SELECT $(donationId), name, count
+      SELECT id, $(donationId), name, count
       FROM
           json_to_recordset($(furniture:json))
-      AS data(name text, count integer)
+      AS data(id integer, name text, count integer)
       ON CONFLICT (id) DO UPDATE
       SET name = excluded.name,
           count = excluded.count
@@ -312,6 +311,7 @@ donationsRouter.put('/:donationId', async (req, res) => {
 
     res.status(200).send(keysToCamel(donation));
   } catch (err) {
+    console.log(err.message);
     res.status(500).send(err.message);
   }
 });
