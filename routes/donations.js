@@ -3,9 +3,6 @@ const { customAlphabet } = require('nanoid');
 const { keysToCamel, diffArray } = require('../common/utils');
 const { DeleteS3Object } = require('../nodeScheduler');
 const { db } = require('../server/db');
-const { DeleteS3Object } = require('../nodeScheduler');
-
-// const { deleteS3Object } = require('../nodeScheduler');
 
 const donationsRouter = express.Router();
 
