@@ -109,6 +109,21 @@ LEFT JOIN (
 ON relation3.route_id = d.route_id
 ORDER BY d.order_num`;
 
+const diffArray = (ids, arr) => {
+  const oldArr = new Set(ids.map(({ id }) => id));
+  const newArr = {};
+  arr.forEach((f) => {
+    newArr[f.id] = f;
+  });
+
+  const putArr = arr.filter((f) => f.id).map(({ id }) => newArr[id]);
+  const postArr = arr.filter((f) => !f.id);
+  arr.filter((f) => f.id).forEach(({ id }) => oldArr.delete(id));
+  const delArr = [...oldArr].map((id) => ({ id }));
+
+  return { putArr, postArr, delArr };
+};
+
 module.exports = {
   isNumeric,
   isBoolean,
@@ -117,4 +132,5 @@ module.exports = {
   isPhoneNumber,
   keysToCamel,
   donationsQuery,
+  diffArray,
 };
