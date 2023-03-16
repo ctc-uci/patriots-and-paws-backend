@@ -1,6 +1,7 @@
 const express = require('express');
 const { customAlphabet } = require('nanoid');
 const { keysToCamel, diffArray } = require('../common/utils');
+const { DeleteS3Object } = require('../nodeScheduler');
 const { db } = require('../server/db');
 
 const donationsRouter = express.Router();
@@ -225,7 +226,6 @@ donationsRouter.post('/assign-route', async (req, res) => {
 
 // update info for a specific donation
 donationsRouter.put('/:donationId', async (req, res) => {
-  // TODO: add update furniture & pictures (can do this in multiple queries, not super inefficient as we won't be updating more than a certain number of rows at a time)
   try {
     const { donationId } = req.params;
     const {
@@ -288,23 +288,54 @@ donationsRouter.put('/:donationId', async (req, res) => {
       putArr: picturePut,
       postArr: picturePost,
       delArr: pictureDel,
-    } = diffArray(pictureIds, furniture);
+    } = diffArray(pictureIds, pictures);
 
-    console.log('PUT:', picturePut);
-    console.log('POST:', picturePost);
-    console.log('DELETE:', pictureDel);
+    // console.log('PUT:', picturePut);
+    // console.log('POST:', picturePost);
+    // console.log('DELETE:', pictureDel);
 
-    const picturesRes = await db.query(
-      `INSERT INTO pictures(id, donation_id, image_url, notes)
-      SELECT id, $(donationId), "imageUrl", notes
+    const picturePostRes = await db.query(
+      `INSERT INTO pictures(donation_id, image_url, notes)
+      SELECT $(donationId), "imageUrl", notes
       FROM
-          json_to_recordset($(pictures:json))
+          json_to_recordset($(picturePost:json))
       AS data(id integer, "imageUrl" text, notes text)
-      ON CONFLICT (id) DO UPDATE
-      SET notes = excluded.notes
       RETURNING *;`,
-      { donationId, pictures },
+      { donationId, picturePost },
     );
+
+    const picturePutRes = await db.query(
+      `UPDATE pictures
+         SET
+            notes = data.notes
+        FROM
+            json_to_recordset($(picturePut:json))
+        AS data(id integer, notes text)
+        WHERE pictures.id = data.id
+        RETURNING *`,
+      { picturePut },
+    );
+
+    const pictureDeleteRes = await db.query(
+      `DELETE FROM pictures
+        WHERE id in (
+            SELECT id
+            FROM
+                json_to_recordset($(pictureDel:json))
+            AS data(id integer)
+        )
+        RETURNING *`,
+      { pictureDel },
+    );
+    // console.log(pictureDeleteRes);
+
+    if (pictureDeleteRes.length) {
+      await Promise.all(
+        keysToCamel(pictureDeleteRes).map(({ imageUrl }) => DeleteS3Object(imageUrl)),
+      );
+    }
+
+    donation[0].pictures = [...picturePostRes, ...picturePutRes];
 
     // diff furniture
 
@@ -340,13 +371,14 @@ donationsRouter.put('/:donationId', async (req, res) => {
             count = data.count
         FROM
             json_to_recordset($(furniturePut:json))
-        AS data(id integer, name text, count integer)
+        AS data(id integer, count integer)
         WHERE furniture.id = data.id
         RETURNING *`,
-      { donationId, furniturePut },
+      { furniturePut },
     );
 
-    const furnitureDeleteRes = await db.query(
+    // const furnitureDeleteRes =
+    await db.query(
       `DELETE FROM furniture
         WHERE id in (
             SELECT id
@@ -355,11 +387,10 @@ donationsRouter.put('/:donationId', async (req, res) => {
             AS data(id integer)
         )
         RETURNING *`,
-      { donationId, furnitureDel },
+      { furnitureDel },
     );
-    console.log(furnitureDeleteRes);
+    // console.log(furnitureDeleteRes);
 
-    donation[0].pictures = picturesRes;
     donation[0].furniture = [...furniturePostRes, ...furniturePutRes];
 
     res.status(200).send(keysToCamel(donation));
