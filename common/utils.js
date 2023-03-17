@@ -1,3 +1,6 @@
+const { DeleteS3Object } = require('../nodeScheduler');
+const { db } = require('../server/db');
+
 const isNumeric = (value, errorMessage) => {
   if (!/^\d+$/.test(value)) {
     throw new Error(errorMessage);
@@ -124,6 +127,117 @@ const diffArray = (ids, arr) => {
   return { putArr, postArr, delArr };
 };
 
+const updatePictures = async (pictures, donationId) => {
+  const pictureIds = await db.query(`SELECT id FROM pictures WHERE donation_id=$(donationId)`, {
+    donationId,
+  });
+  const {
+    putArr: picturePut,
+    postArr: picturePost,
+    delArr: pictureDel,
+  } = diffArray(pictureIds, pictures);
+
+  // console.log('PUT:', picturePut);
+  // console.log('POST:', picturePost);
+  // console.log('DELETE:', pictureDel);
+
+  const picturePostRes = await db.query(
+    `INSERT INTO pictures(donation_id, image_url, notes)
+    SELECT $(donationId), "imageUrl", notes
+    FROM
+        json_to_recordset($(picturePost:json))
+    AS data(id integer, "imageUrl" text, notes text)
+    RETURNING *;`,
+    { donationId, picturePost },
+  );
+
+  const picturePutRes = await db.query(
+    `UPDATE pictures
+       SET
+          notes = data.notes
+      FROM
+          json_to_recordset($(picturePut:json))
+      AS data(id integer, notes text)
+      WHERE pictures.id = data.id
+      RETURNING *`,
+    { picturePut },
+  );
+
+  const pictureDeleteRes = await db.query(
+    `DELETE FROM pictures
+      WHERE id in (
+          SELECT id
+          FROM
+              json_to_recordset($(pictureDel:json))
+          AS data(id integer)
+      )
+      RETURNING *`,
+    { pictureDel },
+  );
+  // console.log(pictureDeleteRes);
+
+  if (pictureDeleteRes.length) {
+    await Promise.all(
+      keysToCamel(pictureDeleteRes).map(({ imageUrl }) => DeleteS3Object(imageUrl)),
+    );
+  }
+
+  return [...picturePostRes, ...picturePutRes];
+};
+
+const updateFurniture = async (furniture, donationId) => {
+  const furnitureIds = await db.query(`SELECT id FROM furniture WHERE donation_id=$(donationId)`, {
+    donationId,
+  });
+  const {
+    putArr: furniturePut,
+    postArr: furniturePost,
+    delArr: furnitureDel,
+  } = diffArray(furnitureIds, furniture);
+
+  // console.log('PUT:', furniturePut);
+  // console.log('POST:', furniturePost);
+  // console.log('DELETE:', furnitureDel);
+
+  const furniturePostRes = await db.query(
+    `INSERT INTO furniture(donation_id, name, count)
+    SELECT $(donationId), name, count
+    FROM
+        json_to_recordset($(furniturePost:json))
+    AS data(name text, count integer)
+    RETURNING *;`,
+    { donationId, furniturePost },
+  );
+
+  const furniturePutRes = await db.query(
+    `UPDATE furniture
+       SET
+          count = data.count
+      FROM
+          json_to_recordset($(furniturePut:json))
+      AS data(id integer, count integer)
+      WHERE furniture.id = data.id
+      RETURNING *`,
+    { furniturePut },
+  );
+
+  // const furnitureDeleteRes =
+  await db.query(
+    `DELETE FROM furniture
+      WHERE id in (
+          SELECT id
+          FROM
+              json_to_recordset($(furnitureDel:json))
+          AS data(id integer)
+      )
+      RETURNING *`,
+    { furnitureDel },
+  );
+  // console.log(furnitureDeleteRes);
+
+  return [...furniturePostRes, ...furniturePutRes];
+};
+
 module.exports = {
   isNumeric,
   isBoolean,
@@ -133,4 +247,6 @@ module.exports = {
   keysToCamel,
   donationsQuery,
   diffArray,
+  updatePictures,
+  updateFurniture,
 };

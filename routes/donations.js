@@ -1,6 +1,6 @@
 const express = require('express');
 const { customAlphabet } = require('nanoid');
-const { keysToCamel, diffArray } = require('../common/utils');
+const { keysToCamel, updatePictures, updateFurniture } = require('../common/utils');
 const { DeleteS3Object } = require('../nodeScheduler');
 const { db } = require('../server/db');
 
@@ -209,9 +209,9 @@ donationsRouter.post('/assign-route', async (req, res) => {
     const { donationId, routeId } = req.body;
     const donation = await db.query(
       `UPDATE donations
-      SET order_num = (SELECT COUNT(*) FROM donations WHERE route_id = ${routeId}) + 1,
-        route_id = ${routeId}
-      where id = ${donationId}
+      SET order_num = (SELECT COUNT(*) FROM donations WHERE route_id = $(routeId)) + 1,
+        route_id = $(routeId)
+      where id = $(donationId)
       returning *;`,
       {
         donationId,
@@ -281,121 +281,17 @@ donationsRouter.put('/:donationId', async (req, res) => {
       },
     );
 
-    const pictureIds = await db.query(`SELECT id FROM pictures WHERE donation_id=$(donationId)`, {
-      donationId,
-    });
-    const {
-      putArr: picturePut,
-      postArr: picturePost,
-      delArr: pictureDel,
-    } = diffArray(pictureIds, pictures);
-
-    // console.log('PUT:', picturePut);
-    // console.log('POST:', picturePost);
-    // console.log('DELETE:', pictureDel);
-
-    const picturePostRes = await db.query(
-      `INSERT INTO pictures(donation_id, image_url, notes)
-      SELECT $(donationId), "imageUrl", notes
-      FROM
-          json_to_recordset($(picturePost:json))
-      AS data(id integer, "imageUrl" text, notes text)
-      RETURNING *;`,
-      { donationId, picturePost },
-    );
-
-    const picturePutRes = await db.query(
-      `UPDATE pictures
-         SET
-            notes = data.notes
-        FROM
-            json_to_recordset($(picturePut:json))
-        AS data(id integer, notes text)
-        WHERE pictures.id = data.id
-        RETURNING *`,
-      { picturePut },
-    );
-
-    const pictureDeleteRes = await db.query(
-      `DELETE FROM pictures
-        WHERE id in (
-            SELECT id
-            FROM
-                json_to_recordset($(pictureDel:json))
-            AS data(id integer)
-        )
-        RETURNING *`,
-      { pictureDel },
-    );
-    // console.log(pictureDeleteRes);
-
-    if (pictureDeleteRes.length) {
-      await Promise.all(
-        keysToCamel(pictureDeleteRes).map(({ imageUrl }) => DeleteS3Object(imageUrl)),
-      );
+    if (pictures) {
+      donation[0].pictures = await updatePictures(pictures, donationId);
     }
 
-    donation[0].pictures = [...picturePostRes, ...picturePutRes];
-
-    // diff furniture
-
-    const furnitureIds = await db.query(
-      `SELECT id FROM furniture WHERE donation_id=$(donationId)`,
-      {
-        donationId,
-      },
-    );
-    const {
-      putArr: furniturePut,
-      postArr: furniturePost,
-      delArr: furnitureDel,
-    } = diffArray(furnitureIds, furniture);
-
-    // console.log('PUT:', furniturePut);
-    // console.log('POST:', furniturePost);
-    // console.log('DELETE:', furnitureDel);
-
-    const furniturePostRes = await db.query(
-      `INSERT INTO furniture(donation_id, name, count)
-      SELECT $(donationId), name, count
-      FROM
-          json_to_recordset($(furniturePost:json))
-      AS data(name text, count integer)
-      RETURNING *;`,
-      { donationId, furniturePost },
-    );
-
-    const furniturePutRes = await db.query(
-      `UPDATE furniture
-         SET
-            count = data.count
-        FROM
-            json_to_recordset($(furniturePut:json))
-        AS data(id integer, count integer)
-        WHERE furniture.id = data.id
-        RETURNING *`,
-      { furniturePut },
-    );
-
-    // const furnitureDeleteRes =
-    await db.query(
-      `DELETE FROM furniture
-        WHERE id in (
-            SELECT id
-            FROM
-                json_to_recordset($(furnitureDel:json))
-            AS data(id integer)
-        )
-        RETURNING *`,
-      { furnitureDel },
-    );
-    // console.log(furnitureDeleteRes);
-
-    donation[0].furniture = [...furniturePostRes, ...furniturePutRes];
+    if (furniture) {
+      donation[0].furniture = await updateFurniture(furniture, donationId);
+    }
 
     res.status(200).send(keysToCamel(donation));
   } catch (err) {
-    console.log(err.message);
+    // console.log(err.message);
     res.status(500).send(err.message);
   }
 });
