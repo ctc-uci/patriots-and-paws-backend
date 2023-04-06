@@ -64,7 +64,7 @@ donationsRouter.get('/:donationId', async (req, res) => {
     const { donationId } = req.params;
     const donation = await db.query(
       `SELECT id,
-        route_id,
+        donation.route_id,
         order_num,
         status,
         address_street,
@@ -77,6 +77,7 @@ donationsRouter.get('/:donationId', async (req, res) => {
         phone_num,
         notes,
         submitted_date,
+        relation3.pickup_date,
         COALESCE(relation1.furniture, '{}') AS furniture,
         COALESCE(relation2.pictures, '{}') AS pictures
       FROM (SELECT * FROM donations WHERE id = $(donationId)) as donation
@@ -91,7 +92,12 @@ donationsRouter.get('/:donationId', async (req, res) => {
               FROM pictures AS pics
               GROUP BY pics.donation_id
             ) AS relation2
-        ON relation2.donation_id = donation.id;`,
+        ON relation2.donation_id = donation.id
+        LEFT JOIN (
+          SELECT id AS route_id, date as pickup_date
+          FROM routes
+        ) AS relation3
+        ON relation3.route_id = donation.route_id;`,
       {
         donationId,
       },
