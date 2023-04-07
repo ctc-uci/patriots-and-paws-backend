@@ -6,9 +6,39 @@ const { db } = require('../server/db');
 
 const donationsRouter = express.Router();
 
+// define donation statuses
+const {
+  PENDING,
+  APPROVAL_REQUESTED,
+  CHANGES_REQUESTED,
+  SCHEDULING,
+  SCHEDULED,
+  PICKED_UP,
+  RESCHEDULE,
+} = {
+  PENDING: 'pending',
+  APPROVAL_REQUESTED: 'approval requested',
+  CHANGES_REQUESTED: 'changes requested',
+  SCHEDULING: 'scheduling',
+  SCHEDULED: 'scheduled',
+  PICKED_UP: 'picked up',
+  RESCHEDULE: 'reschedule',
+};
+
+const tabStatuses = [
+  {
+    tab: 'admin',
+    statuses: [PENDING, CHANGES_REQUESTED, RESCHEDULE, APPROVAL_REQUESTED],
+  },
+  { tab: 'donor', statuses: [SCHEDULING] },
+  { tab: 'pickup', statuses: [SCHEDULED] },
+  { tab: 'archive', statuses: [PICKED_UP] },
+];
+
 // get all donation rows
 donationsRouter.get('/', async (req, res) => {
-  const { numDonations, pageNum } = req.query;
+  const { numDonations, pageNum, statusGroup } = req.query;
+
   try {
     const allDonations = await db.query(
       `SELECT
@@ -36,11 +66,12 @@ donationsRouter.get('/', async (req, res) => {
         FROM routes
       ) AS relation3
       ON relation3.route_id = d.route_id
+    ${statusGroup ? `WHERE d.status in $(statusGroup)` : ''}
     ${numDonations ? `ORDER BY id` : ''}
     ${numDonations ? `LIMIT ${numDonations}` : ''}
     ${pageNum ? `OFFSET ${(pageNum - 1) * numDonations}` : ''}
     ;`,
-      { numDonations, pageNum },
+      { numDonations, pageNum, statusGroup },
     );
 
     res.status(200).json(keysToCamel(allDonations));
@@ -49,10 +80,18 @@ donationsRouter.get('/', async (req, res) => {
   }
 });
 
+// get total number of donations for specific tab
 donationsRouter.get('/total', async (req, res) => {
   try {
-    const totalDonations = await db.query(`SELECT COUNT(DISTINCT id) FROM donations;`);
-    res.status(200).json(keysToCamel(totalDonations));
+    const { tab } = req.query;
+    // find right statuses for tab or have empty array of statuses if not found
+    const { statuses } = tabStatuses.find((tabStatus) => tabStatus.tab === tab) || { statuses: [] };
+    const tabTotalDonations = await db.query(
+      `SELECT COUNT(DISTINCT id) FROM donations WHERE status in (${statuses
+        .map((status) => `'${status}'`)
+        .join(',')})`,
+    );
+    res.status(200).json(keysToCamel(tabTotalDonations));
   } catch (err) {
     res.status(500).send(err.message);
   }
