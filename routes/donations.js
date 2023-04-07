@@ -84,14 +84,24 @@ donationsRouter.get('/', async (req, res) => {
 donationsRouter.get('/total', async (req, res) => {
   try {
     const { tab } = req.query;
-    // find right statuses for tab or have empty array of statuses if not found
-    const { statuses } = tabStatuses.find((tabStatus) => tabStatus.tab === tab) || { statuses: [] };
-    const tabTotalDonations = await db.query(
-      `SELECT COUNT(DISTINCT id) FROM donations WHERE status in (${statuses
-        .map((status) => `'${status}'`)
-        .join(',')})`,
-    );
-    res.status(200).json(keysToCamel(tabTotalDonations));
+    let totalDonations = 0;
+
+    // if no tab is specified, get all donations
+    if (!tab) {
+      totalDonations = await db.query(`SELECT COUNT(DISTINCT id) FROM donations;`);
+    } else {
+      // find right statuses for tab or have empty array of statuses if not found
+      const { statuses } = tabStatuses.find((tabStatus) => tabStatus.tab === tab) || {
+        statuses: [],
+      };
+      totalDonations = await db.query(
+        `SELECT COUNT(DISTINCT id) FROM donations WHERE status in (${statuses
+          .map((status) => `'${status}'`)
+          .join(',')})`,
+      );
+    }
+
+    res.status(200).json(keysToCamel(totalDonations));
   } catch (err) {
     res.status(500).send(err.message);
   }
