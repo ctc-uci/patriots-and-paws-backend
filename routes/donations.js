@@ -35,73 +35,57 @@ const tabStatuses = [
   { tab: 'archive', statuses: [PICKED_UP] },
 ];
 
-// get all donation rows
+// get donations and donation count for specific tab or all
 donationsRouter.get('/', async (req, res) => {
-  const { numDonations, pageNum, statusGroup } = req.query;
-
   try {
+    const { numDonations, pageNum, tab } = req.query;
+
+    const { statuses } = tabStatuses.find((tabStatus) => tabStatus.tab === tab) || {
+      statuses: [],
+    };
+    const statusList = statuses.map((status) => `'${status}'`).join(',');
+    const allDonationsWhereClause = statusList ? `WHERE d.status IN (${statusList})` : '';
+    const totalDonationsWhereClause = statusList ? `WHERE status IN (${statusList})` : '';
+
     const allDonations = await db.query(
       `SELECT
-      d.id, d.route_id, d.order_num, d.status,
-      d.address_street, d.address_city, d.address_unit,
-      d.address_zip, d.first_name, d.last_name, d.email,
-      d.phone_num, d.notes, d.submitted_date, relation3.pickup_date,
-      COALESCE(relation1.furniture, '{}') AS furniture,
-      COALESCE(relation2.pictures, '{}') AS pictures
-      FROM donations AS d
-      LEFT JOIN (SELECT f.donation_id,
-            array_agg(json_build_object('id', f.id, 'name', f.name, 'count', f.count)) AS furniture
-            FROM furniture AS f
-            GROUP BY f.donation_id
-          ) AS relation1
-      ON relation1.donation_id = d.id
-      LEFT JOIN (SELECT pics.donation_id,
-            array_agg(json_build_object('id', pics.id, 'image_url', pics.image_url, 'notes', pics.notes)) AS pictures
-            FROM pictures AS pics
-            GROUP BY pics.donation_id
-          ) AS relation2
-      ON relation2.donation_id = d.id
-      LEFT JOIN (
-        SELECT id AS route_id, date as pickup_date
-        FROM routes
-      ) AS relation3
-      ON relation3.route_id = d.route_id
-    ${statusGroup ? `WHERE d.status in $(statusGroup)` : ''}
-    ${numDonations ? `ORDER BY id` : ''}
-    ${numDonations ? `LIMIT ${numDonations}` : ''}
-    ${pageNum ? `OFFSET ${(pageNum - 1) * numDonations}` : ''}
-    ;`,
-      { numDonations, pageNum, statusGroup },
+        d.id, d.route_id, d.order_num, d.status,
+        d.address_street, d.address_city, d.address_unit,
+        d.address_zip, d.first_name, d.last_name, d.email,
+        d.phone_num, d.notes, d.submitted_date, relation3.pickup_date,
+        COALESCE(relation1.furniture, '{}') AS furniture,
+        COALESCE(relation2.pictures, '{}') AS pictures
+        FROM donations AS d
+        LEFT JOIN (SELECT f.donation_id,
+              array_agg(json_build_object('id', f.id, 'name', f.name, 'count', f.count)) AS furniture
+              FROM furniture AS f
+              GROUP BY f.donation_id
+            ) AS relation1
+        ON relation1.donation_id = d.id
+        LEFT JOIN (SELECT pics.donation_id,
+              array_agg(json_build_object('id', pics.id, 'image_url', pics.image_url, 'notes', pics.notes)) AS pictures
+              FROM pictures AS pics
+              GROUP BY pics.donation_id
+            ) AS relation2
+        ON relation2.donation_id = d.id
+        LEFT JOIN (
+          SELECT id AS route_id, date as pickup_date
+          FROM routes
+        ) AS relation3
+        ON relation3.route_id = d.route_id
+        ${allDonationsWhereClause}
+        ORDER BY id
+        ${numDonations ? `LIMIT ${numDonations}` : ''}
+        ${pageNum ? `OFFSET ${(pageNum - 1) * numDonations}` : ''}
+        ;`,
+      { numDonations, pageNum },
     );
 
-    res.status(200).json(keysToCamel(allDonations));
-  } catch (err) {
-    res.status(500).send(err.message);
-  }
-});
+    const totalDonations = await db.query(
+      `SELECT COUNT(DISTINCT id) FROM donations ${totalDonationsWhereClause}`,
+    );
 
-// get total number of donations for specific tab
-donationsRouter.get('/total', async (req, res) => {
-  try {
-    const { tab } = req.query;
-    let totalDonations = 0;
-
-    // if no tab is specified, get all donations
-    if (!tab) {
-      totalDonations = await db.query(`SELECT COUNT(DISTINCT id) FROM donations;`);
-    } else {
-      // find right statuses for tab or have empty array of statuses if not found
-      const { statuses } = tabStatuses.find((tabStatus) => tabStatus.tab === tab) || {
-        statuses: [],
-      };
-      totalDonations = await db.query(
-        `SELECT COUNT(DISTINCT id) FROM donations WHERE status in (${statuses
-          .map((status) => `'${status}'`)
-          .join(',')})`,
-      );
-    }
-
-    res.status(200).json(keysToCamel(totalDonations));
+    res.status(200).json(keysToCamel({ count: totalDonations, donations: allDonations }));
   } catch (err) {
     res.status(500).send(err.message);
   }
