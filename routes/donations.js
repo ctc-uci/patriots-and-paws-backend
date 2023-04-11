@@ -25,15 +25,6 @@ const {
   RESCHEDULE: 'reschedule',
 };
 
-// const tabStatuses = [
-//   {
-//     tab: 'admin',
-//     statuses: [PENDING, CHANGES_REQUESTED, RESCHEDULE, APPROVAL_REQUESTED],
-//   },
-//   { tab: 'donor', statuses: [SCHEDULING] },
-//   { tab: 'pickup', statuses: [SCHEDULED] },
-//   { tab: 'archive', statuses: [PICKED_UP] },
-// ];
 const tabStatuses = {
   admin: [PENDING, CHANGES_REQUESTED, RESCHEDULE, APPROVAL_REQUESTED],
   donor: [SCHEDULING],
@@ -45,11 +36,6 @@ const tabStatuses = {
 donationsRouter.get('/', async (req, res) => {
   try {
     const { numDonations, pageNum, tab } = req.query;
-
-    // const { statuses } = tabStatuses.find((tabStatus) => tabStatus.tab === tab) || {
-    //   statuses: [],
-    // };
-
     const statuses = tabStatuses[tab] || [];
     const statusList = statuses.map((status) => `'${status}'`).join(',');
     const allDonationsWhereClause = statusList ? `WHERE d.status IN (${statusList})` : '';
