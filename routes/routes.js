@@ -44,23 +44,14 @@ routesRouter.get('/', async (req, res) => {
       ON route_donations.route_id = routes.id
       LEFT JOIN users ON routes.driver_id = users.id;`,
     );
-    // const x = allRoutes[0].donations.filter((u) => u.status !== 'reschedule');
-    // console.log(x);
-    // const newRoutes = allRoutes.map((cell) => {
-    //   if (cell.donations) {
-    //     return cell.donations.filter((u) => u.status !== 'reschedule');
-    //   }
-    //   return cell;
-    // });
-    // console.log(allRoutes[0]);
-    // const nr = allRoutes.map((cell) => cell.donations = {
-    //   if (cell.donations) {
-    //     return cell.donations.filter((u) => u.status !== 'reschedule');
-    //   }
-    //   return [];
-    // // });
-    // console.log(nr);
-    res.status(200).json(keysToCamel(allRoutes));
+    const nonRescheduledRoutes = allRoutes.map((cell) => {
+      if (!cell.donations) {
+        return { ...cell };
+      }
+      const donations = cell.donations.filter((d) => d.status !== 'reschedule');
+      return { ...cell, donations: donations.length > 0 ? donations : null };
+    });
+    res.status(200).json(keysToCamel(nonRescheduledRoutes));
   } catch (err) {
     res.status(500).send(err.message);
   }

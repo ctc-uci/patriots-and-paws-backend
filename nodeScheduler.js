@@ -51,4 +51,19 @@ const deletePictures = async () => {
   }
 };
 
-module.exports = { DeleteS3Object, deleteRoutes, deletePictures };
+const updateSchedulingStatus = async () => {
+  try {
+    const todayRoutesIDs = await db.query(`SELECT id FROM routes WHERE date = CURRENT_DATE`);
+    await Promise.all(
+      todayRoutesIDs.map((cell) =>
+        db.query(
+          `UPDATE donations SET status = 'reschedule' WHERE route_id = ${cell.id} AND status = 'scheduling'`,
+        ),
+      ),
+    );
+  } catch (err) {
+    // console.error('Error updating status: ', err);
+  }
+};
+
+module.exports = { DeleteS3Object, deleteRoutes, deletePictures, updateSchedulingStatus };

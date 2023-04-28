@@ -17,12 +17,14 @@ const furniture = require('./routes/furniture');
 const furnitureOptions = require('./routes/furnitureOptions');
 
 // Node Schedule jobs
-const { deleteRoutes, deletePictures } = require('./nodeScheduler');
+const { deleteRoutes, deletePictures, updateSchedulingStatus } = require('./nodeScheduler');
 
 // delete routes at 12 AM on the 1st and 15th of every month
 schedule.scheduleJob('0 0 1,15 * *', deleteRoutes);
 // delete pictures at 12 AM on the 1st of every month
 schedule.scheduleJob('0 0 1 * *', deletePictures);
+// update scheduling status to reschedule at 12 AM every day
+schedule.scheduleJob('0 0 * * *', updateSchedulingStatus);
 
 const app = express();
 
