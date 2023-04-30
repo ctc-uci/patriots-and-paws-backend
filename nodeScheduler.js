@@ -51,4 +51,21 @@ const deletePictures = async () => {
   }
 };
 
-module.exports = { DeleteS3Object, deleteRoutes, deletePictures };
+const updateSchedulingStatus = async () => {
+  try {
+    await db.query(
+      `UPDATE donations
+      SET status = 'reschedule'
+      WHERE route_id IN (
+        SELECT id
+        FROM routes
+        WHERE date = CURRENT_DATE
+      )
+      AND status = 'scheduling'`,
+    );
+  } catch (err) {
+    // console.error('Error updating status: ', err);
+  }
+};
+
+module.exports = { DeleteS3Object, deleteRoutes, deletePictures, updateSchedulingStatus };
