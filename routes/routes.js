@@ -119,7 +119,7 @@ routesRouter.get('/driver/:driverId', async (req, res) => {
     );
     const nonRescheduledRoutes = driverRoutes.map((cell) => {
       if (!cell.donations) {
-        return { ...cell };
+        return cell;
       }
       const donations = cell.donations.filter((d) => d.status !== 'reschedule');
       return { ...cell, donations: donations.length > 0 ? donations : null };
@@ -185,7 +185,7 @@ routesRouter.get('/:routeId', async (req, res) => {
     if (routeInfo[0].donations) {
       const filteredDonations = routeInfo[0].donations.filter((d) => d.status !== 'reschedule');
       const filteredRouteInfo = { ...routeInfo[0], donations: filteredDonations };
-      res.status(200).json(keysToCamel(filteredRouteInfo));
+      res.status(200).json(keysToCamel([filteredRouteInfo]));
     } else {
       res.status(200).json(keysToCamel(routeInfo));
     }
