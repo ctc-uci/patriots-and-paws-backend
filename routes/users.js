@@ -31,6 +31,20 @@ usersRouter.get('/', async (req, res) => {
   }
 });
 
+usersRouter.get('/drivers', async (req, res) => {
+  try {
+    const allDrivers = await db.query(`
+    SELECT d.id, d.first_name, d.last_name, d.phone_number, d.email, array_agg(TO_CHAR(r.date, 'yyyy-mm-dd')) as assigned_routes
+      FROM (
+        SELECT * FROM users WHERE role='driver') as d
+      LEFT JOIN routes r ON r.driver_id = d.id
+      GROUP BY d.id, d.first_name, d.last_name, d.phone_number, d.email`);
+    res.status(200).json(keysToCamel(allDrivers));
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+});
+
 usersRouter.get('/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
