@@ -37,7 +37,7 @@ routesRouter.get('/', async (req, res) => {
             'address_unit', dd.address_unit, 'address_zip', dd.address_zip,
             'first_name', dd.first_name, 'last_name', dd.last_name, 'email', dd.email,
             'phone_num', dd.phone_num, 'notes', dd.notes, 'submitted_date', dd.submitted_date,
-            'pickup_date', dd.pickup_date, 'furniture', dd.furniture,
+            'pickup_date', dd.pickup_date, 'route_name', dd.route_name, 'furniture', dd.furniture,
             'pictures', dd.pictures)) as donations
         FROM (${donationsQuery}) as dd
         GROUP BY dd.route_id) as route_donations
@@ -78,13 +78,13 @@ routesRouter.get('/driver/:driverId', async (req, res) => {
             'address_unit', dd.address_unit, 'address_zip', dd.address_zip,
             'first_name', dd.first_name, 'last_name', dd.last_name, 'email', dd.email,
             'phone_num', dd.phone_num, 'notes', dd.notes, 'submitted_date', dd.submitted_date,
-            'pickup_date', dd.pickup_date, 'furniture', dd.furniture,
+            'pickup_date', dd.pickup_date, 'route_name', dd.route_name, 'furniture', dd.furniture,
             'pictures', dd.pictures)) as donations
         FROM (SELECT
           d.id, d.route_id, d.order_num, d.status,
           d.address_street, d.address_city, d.address_unit,
           d.address_zip, d.first_name, d.last_name, d.email,
-          d.phone_num, d.notes, d.submitted_date, relation3.pickup_date,
+          d.phone_num, d.notes, d.submitted_date, relation3.pickup_date, relation3.route_name,
           COALESCE(relation1.furniture, '{}') AS furniture,
           COALESCE(relation2.pictures, '{}') AS pictures
           FROM (SELECT * FROM donations
@@ -104,7 +104,7 @@ routesRouter.get('/driver/:driverId', async (req, res) => {
           ) AS relation2
           ON relation2.donation_id = d.id
           LEFT JOIN (
-            SELECT id AS route_id, date as pickup_date
+            SELECT id AS route_id, date as pickup_date, name as route_name
             FROM routes
           ) AS relation3
           ON relation3.route_id = d.route_id
@@ -149,13 +149,13 @@ routesRouter.get('/:routeId', async (req, res) => {
             'address_unit', dd.address_unit, 'address_zip', dd.address_zip,
             'first_name', dd.first_name, 'last_name', dd.last_name, 'email', dd.email,
             'phone_num', dd.phone_num, 'notes', dd.notes, 'submitted_date', dd.submitted_date,
-            'pickup_date', dd.pickup_date, 'furniture', dd.furniture,
+            'pickup_date', dd.pickup_date, 'route_name', dd.route_name, 'furniture', dd.furniture,
             'pictures', dd.pictures)) as donations
         FROM (SELECT
           d.id, d.route_id, d.order_num, d.status,
           d.address_street, d.address_city, d.address_unit,
           d.address_zip, d.first_name, d.last_name, d.email,
-          d.phone_num, d.notes, d.submitted_date, relation3.pickup_date,
+          d.phone_num, d.notes, d.submitted_date, relation3.pickup_date, relation3.route_name,
           COALESCE(relation1.furniture, '{}') AS furniture,
           COALESCE(relation2.pictures, '{}') AS pictures
           FROM (SELECT * FROM donations WHERE route_id = $(routeId)) AS d
@@ -172,7 +172,7 @@ routesRouter.get('/:routeId', async (req, res) => {
           ) AS relation2
           ON relation2.donation_id = d.id
           LEFT JOIN (
-            SELECT id AS route_id, date as pickup_date
+            SELECT id AS route_id, date as pickup_date, name as route_name
             FROM routes
           ) AS relation3
           ON relation3.route_id = d.route_id
