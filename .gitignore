@@ -106,5 +106,13 @@ dist
 .DS_Store
 
 yarn.lock
+.yarn/*
+.yarn/cache
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+.pnp.*
 
 firebase-adminsdk.json
